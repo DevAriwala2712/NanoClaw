@@ -1,0 +1,6 @@
+.zig-cache/
+zig-out/
+.idea/
+.DS_Store
+state/
+nanoclaw-next.conf
