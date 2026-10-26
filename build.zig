@@ -27,6 +27,16 @@ pub fn build(b: *std.Build) void {
     const run_step = b.step("run", "Run NanoClaw-Next");
     run_step.dependOn(&run_cmd.step);
 
+    const tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    const test_step = b.step("test", "Run unit tests");
+    test_step.dependOn(&b.addRunArtifact(tests).step);
+
     const rel_optimize: std.builtin.OptimizeMode = .ReleaseSmall;
 
     const release_x86_module = b.createModule(.{

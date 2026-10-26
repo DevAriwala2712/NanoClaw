@@ -3,113 +3,92 @@ const config = @import("config.zig");
 const sandbox = @import("runtime/sandbox.zig");
 const timeout = @import("runtime/timeout.zig");
 const rollback = @import("runtime/rollback.zig");
-const inference = @import("inference/runtime.zig");
 const memory = @import("memory/hierarchy.zig");
-const phase2_memory = @import("memory.zig");
-const skills = @import("skills/runtime.zig");
 const tools = @import("tools/fallback.zig");
+const engine_mod = @import("edge/engine.zig");
+const scheduler = @import("edge/scheduler.zig");
+const sysmem = @import("edge/sysmem.zig");
+const gguf = @import("edge/gguf.zig");
+const estimate = @import("edge/estimate.zig");
+
+pub const BenchOptions = struct {
+    prompt: []const u8,
+    runs: u32 = 5,
+    out_path: []const u8 = "state/bench.csv",
+    available_mb: ?u64 = null,
+};
 
 pub const App = struct {
     allocator: std.mem.Allocator,
     cfg: config.RuntimeConfig,
     sbx: sandbox.Sandbox,
     journal: rollback.Journal,
-    llm: inference.InferenceRuntime,
+    engine: engine_mod.Engine,
     mem: memory.HierarchicalMemory,
-    skill_rt: skills.SkillRuntime,
     router: tools.AutoCorrector,
 
-    pub fn init(allocator: std.mem.Allocator, cfg: config.RuntimeConfig) !App {
-        var llm = inference.InferenceRuntime.init(allocator);
-        llm.setBudget(cfg.vram_budget_mb);
-        llm.setContextBudget(4096);
-
-        try llm.registerModel(.planner, .{
-            .path = "models/smollm-1.7b-q4_0.gguf",
-            .quantization = .q4_0,
-            .max_vram_mb = 1100,
-            .context_tokens = 2048,
-        });
-
-        try llm.registerModel(.executor, .{
-            .path = "models/smollm-360m-q4_1.gguf",
-            .quantization = .q4_1,
-            .max_vram_mb = 450,
-            .context_tokens = 1024,
-        });
-
-        return .{
-            .allocator = allocator,
-            .cfg = cfg,
-            .sbx = sandbox.Sandbox.init(allocator),
-            .journal = rollback.Journal.init(allocator),
-            .llm = llm,
-            .mem = memory.HierarchicalMemory.init(allocator),
-            .skill_rt = skills.SkillRuntime.init(allocator),
-            .router = try tools.AutoCorrector.init(allocator),
-        };
+    /// Heap-allocated so the engine can keep a stable pointer to `cfg`.
+    pub fn create(allocator: std.mem.Allocator, cfg: config.RuntimeConfig) !*App {
+        const self = try allocator.create(App);
+        errdefer allocator.destroy(self);
+        self.allocator = allocator;
+        self.cfg = cfg;
+        self.sbx = sandbox.Sandbox.init(allocator);
+        self.journal = rollback.Journal.init(allocator);
+        self.mem = memory.HierarchicalMemory.init(allocator);
+        self.router = try tools.AutoCorrector.init(allocator);
+        self.engine = try engine_mod.Engine.init(allocator, &self.cfg);
+        return self;
     }
 
-    pub fn deinit(self: *App) void {
+    pub fn destroy(self: *App) void {
+        const allocator = self.allocator;
+        self.engine.deinit();
         self.router.deinit();
-        self.skill_rt.deinit();
         self.mem.deinit();
-        self.llm.deinit();
         self.journal.deinit();
-        config.deinit(self.allocator, &self.cfg);
+        config.deinit(allocator, &self.cfg);
+        allocator.destroy(self);
     }
 
-    pub fn run(self: *App) !void {
-        return self.runWithPrompt(null);
-    }
-
-    fn parseCommandLine(allocator: std.mem.Allocator, command: []const u8) ![]const []const u8 {
-        var first_line: []const u8 = "";
-        var line_it = std.mem.splitScalar(u8, command, '\n');
-        while (line_it.next()) |line| {
-            const trimmed = std.mem.trim(u8, line, " \t\r");
-            if (trimmed.len > 0) {
-                if (std.mem.startsWith(u8, trimmed, "```")) {
-                    continue;
-                }
-                first_line = trimmed;
-                break;
-            }
-        }
-        if (first_line.len == 0) return error.EmptyCommand;
-
+    fn tokenize(allocator: std.mem.Allocator, line: []const u8) ![]const []const u8 {
         var argv_list: std.ArrayListUnmanaged([]const u8) = .{};
         errdefer {
             for (argv_list.items) |arg| allocator.free(arg);
             argv_list.deinit(allocator);
         }
-
-        var it = std.process.ArgIteratorGeneral(.{ .single_quotes = true }).init(allocator, first_line) catch |err| {
-            if (err == error.MismatchedQuote) {
-                // fallback to naive space-splitting to prevent crashing on LLM hallucinations
-                var split_it = std.mem.tokenizeAny(u8, first_line, " \t\r\n");
-                while (split_it.next()) |arg| {
-                    if (std.mem.eql(u8, arg, "|") or std.mem.eql(u8, arg, "&&") or std.mem.eql(u8, arg, ";") or std.mem.eql(u8, arg, ">") or std.mem.eql(u8, arg, "<")) {
-                        break;
-                    }
-                    try argv_list.append(allocator, try allocator.dupe(u8, arg));
-                }
-                if (argv_list.items.len == 0) return error.EmptyCommand;
-                return try argv_list.toOwnedSlice(allocator);
-            }
-            return err;
-        };
+        var it = try std.process.ArgIteratorGeneral(.{ .single_quotes = true }).init(allocator, line);
         defer it.deinit();
-
         while (it.next()) |arg| {
-            if (std.mem.eql(u8, arg, "|") or std.mem.eql(u8, arg, "&&") or std.mem.eql(u8, arg, ";") or std.mem.eql(u8, arg, ">") or std.mem.eql(u8, arg, "<")) {
-                break;
-            }
+            // Stop at shell operators: commands are exec'd directly, never through a shell.
+            if (std.mem.eql(u8, arg, "|") or std.mem.eql(u8, arg, "&&") or std.mem.eql(u8, arg, ";") or
+                std.mem.eql(u8, arg, ">") or std.mem.eql(u8, arg, "<")) break;
             try argv_list.append(allocator, try allocator.dupe(u8, arg));
         }
-
         if (argv_list.items.len == 0) return error.EmptyCommand;
         return try argv_list.toOwnedSlice(allocator);
+    }
+
+    /// Small models often ignore "one command only" and emit a commented
+    /// script. Skip fences, comments and `$ ` prompts, and take the first line
+    /// whose executable is allowlisted; otherwise the first command line (which
+    /// the sandbox will then reject with a clear error).
+    fn parseCommandLine(allocator: std.mem.Allocator, text: []const u8, allowlist: []const []const u8) ![]const []const u8 {
+        var first: ?[]const u8 = null;
+        var lines = std.mem.splitScalar(u8, text, '\n');
+        while (lines.next()) |raw| {
+            const t = std.mem.trim(u8, raw, " \t\r");
+            if (t.len == 0 or std.mem.startsWith(u8, t, "```") or t[0] == '#') continue;
+            var line = std.mem.trim(u8, t, "`");
+            if (std.mem.startsWith(u8, line, "$ ")) line = line[2..];
+            if (line.len == 0) continue;
+            if (first == null) first = line;
+            const end = std.mem.indexOfAny(u8, line, " \t") orelse line.len;
+            for (allowlist) |allowed| {
+                if (std.mem.eql(u8, line[0..end], allowed)) return tokenize(allocator, line);
+            }
+        }
+        return tokenize(allocator, first orelse return error.EmptyCommand);
     }
 
     fn freeArgv(allocator: std.mem.Allocator, argv: []const []const u8) void {
@@ -117,588 +96,347 @@ pub const App = struct {
         allocator.free(argv);
     }
 
-    pub fn printStatus(self: *App) !void {
-        const local_cmd = std.process.getEnvVarOwned(self.allocator, "LOCAL_LLM_CMD") catch |err| switch (err) {
-            error.EnvironmentVariableNotFound => null,
-            else => return err,
-        };
-        defer if (local_cmd) |cmd| self.allocator.free(cmd);
-
-        const has_local_bridge = local_cmd != null and std.mem.trim(u8, local_cmd.?, " \t\r\n").len > 0;
-        const llm_mode = if (has_local_bridge) "local-subprocess" else "stub";
-
-        std.debug.print(
-            "=== NanoClaw Status ===\n" ++
-                "LLM mode: {s}\n" ++
-                "LOCAL_LLM_CMD: {s}\n" ++
-                "VRAM budget: {} MB\n" ++
-                "Cloud endpoint: {s}\n" ++
-                "=======================\n",
-            .{
-                llm_mode,
-                if (has_local_bridge) local_cmd.? else "(not set)",
-                self.cfg.vram_budget_mb,
-                if (self.cfg.cloud_endpoint.len == 0) "(none)" else self.cfg.cloud_endpoint,
-            },
-        );
+    fn llmCommandLabel(self: *App, buf: []u8) []const u8 {
+        if (self.cfg.llm_cmd.len > 0) return self.cfg.llm_cmd;
+        const env = std.process.getEnvVarOwned(self.allocator, "LOCAL_LLM_CMD") catch return "(not set: set llm_cmd or LOCAL_LLM_CMD)";
+        defer self.allocator.free(env);
+        const n = @min(env.len, buf.len);
+        @memcpy(buf[0..n], env[0..n]);
+        return buf[0..n];
     }
 
+    /// `probe`: what this device has and what each configured model would cost.
+    pub fn probe(self: *App) !void {
+        std.debug.print("=== Device ===\n", .{});
+        if (sysmem.snapshot()) |snap| {
+            std.debug.print("  source:           {s}\n", .{snap.source});
+            std.debug.print("  total:            {d} MB\n", .{sysmem.mb(snap.total_bytes)});
+            std.debug.print("  host available:   {d} MB\n", .{sysmem.mb(snap.host_available_bytes)});
+            if (snap.cgroup_limit_bytes) |l| std.debug.print("  cgroup limit:     {d} MB (current {d} MB)\n", .{ sysmem.mb(l), sysmem.mb(snap.cgroup_current_bytes orelse 0) });
+            if (snap.pressure_some_avg10) |p| std.debug.print("  PSI some avg10:   {d:.2}%\n", .{p});
+            std.debug.print("  effective avail:  {d} MB\n", .{sysmem.mb(snap.effectiveAvailable())});
+        } else |err| {
+            std.debug.print("  memory snapshot unavailable: {}\n", .{err});
+        }
+        if (self.cfg.memory_budget_mb != 0) std.debug.print("  budget cap:       {d} MB (memory_budget_mb)\n", .{self.cfg.memory_budget_mb});
+        std.debug.print("  headroom:         {d} MB\n", .{self.cfg.memory_headroom_mb});
+        std.debug.print("  tool isolation:   {s}\n", .{sandbox.Sandbox.isolationStatus()});
+        var label_buf: [512]u8 = undefined;
+        std.debug.print("  llm command:      {s}\n", .{self.llmCommandLabel(&label_buf)});
+
+        std.debug.print("\n=== Models ({d} configured) ===\n", .{self.engine.entries.len});
+        if (self.engine.entries.len == 0) {
+            std.debug.print("  none. Add lines like `model=name,path/to/model.gguf,quality` to nanoclaw-next.conf\n", .{});
+        }
+        for (self.engine.entries) |e| {
+            std.debug.print("  {s} ({s})\n", .{ e.spec.name, e.spec.path });
+            if (e.load_error) |err| {
+                std.debug.print("    unusable: {}\n", .{err});
+                continue;
+            }
+        }
+        for (self.engine.cands, self.engine.cand_entry) |c, ei| {
+            const info = self.engine.entries[ei].info.?;
+            std.debug.print("  {s}: arch={s} layers={d} heads={d}/{d}kv head_dim={d} trained_ctx={d}\n", .{
+                c.name, info.arch(), info.block_count, info.head_count, info.kvHeads(), info.headDimK(), info.context_length,
+            });
+            std.debug.print("    weights {d} MB, KV {d} KB/token, overhead {d} MB {s}\n", .{
+                sysmem.mb(c.cost.weights_bytes), c.cost.kv_bytes_per_token / 1024, sysmem.mb(c.cost.overhead_bytes),
+                if (c.cost.calibrated) "(measured)" else "(default; run `bench` to calibrate)",
+            });
+            std.debug.print("    est. total @ctx {d}: {d} MB, @ctx {d}: {d} MB", .{
+                self.cfg.min_ctx, sysmem.mb(c.cost.bytesAt(self.cfg.min_ctx)), self.cfg.desired_ctx, sysmem.mb(c.cost.bytesAt(self.cfg.desired_ctx)),
+            });
+            if (c.cost.gen_tokens_per_sec) |tps| std.debug.print(", {s} {d:.1} tok/s", .{ if (c.cost.speed_inferred) "inferred" else "measured", tps });
+            if (c.cost.startup_ms) |ms| std.debug.print(" + {d} ms startup", .{ms});
+            std.debug.print("\n", .{});
+        }
+
+        if (self.engine.cands.len > 0) {
+            std.debug.print("\n=== Decision for default request ===\n", .{});
+            try self.planCmd(self.engine.defaultRequest(), null);
+        }
+    }
+
+    /// `plan`: dry-run the scheduler, optionally against a simulated memory size.
+    pub fn planCmd(self: *App, req: scheduler.Request, available_mb: ?u64) !void {
+        const b = try self.engine.budget(available_mb);
+        var trace: scheduler.Trace = .{};
+        defer trace.deinit(self.allocator);
+        const choice = try self.engine.plan(req, b, &trace);
+        self.engine.printTrace(trace.items, b);
+        switch (choice) {
+            .local => |l| std.debug.print("[plan] run {s} at ctx {d} (est. {d} MB)\n", .{ self.engine.cands[l.candidate].name, l.ctx, sysmem.mb(l.est_bytes) }),
+            .cloud => |why| std.debug.print("[plan] cloud: {s}\n", .{why}),
+            .refuse => |why| std.debug.print("[plan] refuse: {s}\n", .{why}),
+        }
+    }
+
+    fn fail(self: *App, err: anyerror) anyerror {
+        self.journal.rollbackTxn("cycle") catch {};
+        self.journal.flushToFile(self.cfg.rollback_log_path) catch {};
+        return err;
+    }
+
+    /// `run`: plan, turn the plan into one command (both with the best model
+    /// that fits), then execute it under the tool policy.
     pub fn runWithPrompt(self: *App, runtime_prompt: ?[]const u8) !void {
-        try self.journal.beginTxn("phase1");
-        try self.journal.recordSnapshot("pre", "nanoclaw-next.conf");
-        try self.journal.record("phase1:start");
-        std.debug.print("\n=== NanoClaw-Next Phase 1 Runtime Cycle ===\n\n", .{});
+        const intent = runtime_prompt orelse "List all files in the current directory";
+        try self.journal.beginTxn("cycle");
+        try self.journal.record("cycle:start");
 
-        // record pre-execution checkpoint
-        try self.journal.recordCheckpoint(self.llm.used_vram_mb, self.mem.size(), self.skill_rt.registeredCount());
-
-        // ---- Phase 1a: Planner model load with VRAM budget check ----
-        std.debug.print("--- [1a] Loading Planner Model ---\n", .{});
-        const planner_vram_needed: u32 = 1100;
-        if (self.llm.vramAvailable() < planner_vram_needed) {
-            std.debug.print("[fatal] insufficient VRAM for planner: {} < {} MB\n", .{
-                self.llm.vramAvailable(),
-                planner_vram_needed,
-            });
-            try self.journal.rollbackTxn("phase1");
-            try self.journal.flushToFile(self.cfg.rollback_log_path);
-            return error.InsufficientVRAM;
-        }
-        self.llm.load(.planner) catch |err| {
-            std.debug.print("[inference] planner load failed: {}\n", .{err});
-            try self.journal.rollbackTxn("phase1");
-            try self.journal.flushToFile(self.cfg.rollback_log_path);
-            return err;
-        };
-        try self.journal.record("phase1:planner:loaded");
-        self.llm.status();
-
-        // record planner-loaded checkpoint
-        try self.journal.recordCheckpoint(self.llm.used_vram_mb, self.mem.size(), self.skill_rt.registeredCount());
-
-        // ---- Phase 1b: Task creation and sensitivity routing ----
-        std.debug.print("\n--- [1b] Task Routing ---\n", .{});
-        const runtime_prompt_val = runtime_prompt orelse "List all files in the current directory and check system info";
-        const planner_instruction = try std.fmt.allocPrint(self.allocator,
-            "You are an AI planner for a CLI agent. Break down the user's intent into a step-by-step plan. Output ONLY the plan, no conversational filler. Intent: {s}",
-            .{runtime_prompt_val}
-        );
-        defer self.allocator.free(planner_instruction);
-
-        const task = inference.TaskPayload{
-            .prompt = planner_instruction,
-            .sensitivity = .moderate,
-            .max_tokens = 256,
-        };
-
-        const route = self.llm.route(task);
-        std.debug.print("[router] task sensitivity={s}, decided: {s} ({s})\n", .{
-            @tagName(task.sensitivity),
-            @tagName(route.location),
-            route.reason,
+        std.debug.print("\n--- [1] Plan (prefer quality) ---\n", .{});
+        const planner_prompt = try std.fmt.allocPrint(self.allocator,
+            "You are an AI planner for a CLI agent. Break down the user's intent into a short step-by-step plan. Output ONLY the plan. Intent: {s}", .{intent});
+        defer self.allocator.free(planner_prompt);
+        var plan_req = self.engine.defaultRequest();
+        plan_req.prefer = .quality;
+        plan_req.max_new_tokens = 256;
+        const plan = self.engine.generate(planner_prompt, plan_req, null) catch |err| return self.fail(err);
+        defer self.allocator.free(plan.text);
+        std.debug.print("[plan] {s} ctx={d} attempts={d} peak={d} MB\n{s}\n", .{
+            plan.model, plan.ctx, plan.attempts, sysmem.mb(plan.peak_rss_bytes orelse 0), plan.text,
         });
-        try self.journal.record("phase1:route");
+        try self.journal.record("cycle:plan");
+        try self.mem.put("task:current", intent);
+        try self.mem.put("plan:result", plan.text);
 
-        // ---- Phase 1c: Planner inference ----
-        std.debug.print("\n--- [1c] Planner Inference ---\n", .{});
-        const plan = try self.llm.inferRouted(task, route, self.cfg.cloud_endpoint);
-        defer self.allocator.free(plan.output);
-        std.debug.print("[planner] output: {s}\n", .{plan.output});
-        try self.journal.record("phase1:planner:infer");
+        std.debug.print("\n--- [2] Command (prefer quality) ---\n", .{});
+        const exec_prompt = try std.fmt.allocPrint(self.allocator,
+            "Convert this intent into EXACTLY ONE unix command. Output ONLY the executable and its arguments. No markdown, no explanation, no shell operators.\nIntent: {s}\nPlan: {s}", .{ intent, plan.text });
+        defer self.allocator.free(exec_prompt);
+        var exec_req = self.engine.defaultRequest();
+        // Measured: SmolLM2-360M turned "show free disk space" into
+        // `ls /dev/disk/by-id/`; the 1.7B answered `df`. Wrong commands cost more
+        // than slow ones, so only memory/deadline pressure should pick the small model.
+        exec_req.prefer = .quality;
+        exec_req.max_new_tokens = 64;
+        const cmd = self.engine.generate(exec_prompt, exec_req, null) catch |err| return self.fail(err);
+        defer self.allocator.free(cmd.text);
+        std.debug.print("[command] {s} -> {s}\n", .{ cmd.model, cmd.text });
+        try self.journal.record("cycle:command");
+        try self.mem.refineToKnowledge("executor:last-task", cmd.text);
 
-        // store in session memory
-        try self.mem.put("task:current", task.prompt);
-        try self.mem.put("plan:result", plan.output);
-        std.debug.print("[memory] stored plan in session ({} entries)\n", .{self.mem.sessionCount()});
+        std.debug.print("\n--- [3] Execute (allowlist + hard timeout) ---\n", .{});
+        const parsed = parseCommandLine(self.allocator, cmd.text, self.cfg.tool_allowlist) catch |err| return self.fail(err);
+        defer freeArgv(self.allocator, parsed);
+        const argv = try self.allocator.dupe([]const u8, parsed);
+        defer self.allocator.free(argv);
+        argv[0] = self.router.normalize(argv[0]);
 
-        // ---- Phase 1d: Memory consolidation ----
-        std.debug.print("\n--- [1d] Memory Consolidation ---\n", .{});
-        try self.mem.consolidate();
-        try self.journal.record("phase1:memory:consolidate");
-
-        // register a built-in skill
-        try self.skill_rt.register(.{
-            .name = "file-lister",
-            .version = "1.0.0",
-            .capabilities = &.{
-                .{ .syscall = .file_read, .allowed = true, .name = "read directory" },
-            },
-        });
-        try self.journal.record("phase1:skills:registered");
-
-        // record mid-execution checkpoint
-        try self.journal.recordCheckpoint(self.llm.used_vram_mb, self.mem.size(), self.skill_rt.registeredCount());
-
-        // ---- Phase 1e: Role swap (unload planner, load executor) ----
-        std.debug.print("\n--- [1e] Role Swap: Planner -> Executor ---\n", .{});
-        if (!self.llm.canSwap(.planner, .executor)) {
-            std.debug.print("[fatal] cannot swap from planner to executor (VRAM constraint)\n", .{});
-            try self.journal.rollbackTxn("phase1");
-            try self.journal.flushToFile(self.cfg.rollback_log_path);
-            return error.RoleSwapFailed;
-        }
-        self.llm.unload(.planner);
-        try self.journal.record("phase1:planner:unloaded");
-
-        const executor_vram_needed: u32 = 450;
-        if (self.llm.vramAvailable() < executor_vram_needed) {
-            std.debug.print("[fatal] insufficient VRAM for executor: {} < {} MB\n", .{
-                self.llm.vramAvailable(),
-                executor_vram_needed,
-            });
-            try self.journal.rollbackTxn("phase1");
-            try self.journal.flushToFile(self.cfg.rollback_log_path);
-            return error.InsufficientVRAM;
-        }
-        self.llm.load(.executor) catch |err| {
-            std.debug.print("[inference] executor load failed: {}\n", .{err});
-            try self.journal.rollbackTxn("phase1");
-            try self.journal.flushToFile(self.cfg.rollback_log_path);
-            return err;
-        };
-        try self.journal.record("phase1:executor:loaded");
-        self.llm.status();
-
-        // record role-swap checkpoint
-        try self.journal.recordCheckpoint(self.llm.used_vram_mb, self.mem.size(), self.skill_rt.registeredCount());
-
-        // ---- Phase 1f: Executor inference (generate concrete command) ----
-        std.debug.print("\n--- [1f] Executor Inference ---\n", .{});
-        const command_prompt = runtime_prompt orelse "ls -la";
-        const executor_instruction = try std.fmt.allocPrint(self.allocator, 
-            "You are a terminal executor. Convert this intent into EXACTLY ONE single unix command. Output ONLY the raw executable and its arguments. DO NOT chain or combine multiple commands. NO markdown, NO explanation, NO shell operators (;, &&, |, >, etc).\nIntent: {s}\nPlan: {s}", 
-            .{command_prompt, plan.output}
-        );
-        defer self.allocator.free(executor_instruction);
-        
-        const exec_task = inference.TaskPayload{
-            .prompt = executor_instruction,
-            .sensitivity = .trivial,
-            .max_tokens = 64,
-        };
-        const exec_route = self.llm.route(exec_task);
-        const exec_plan = try self.llm.inferRouted(exec_task, exec_route, self.cfg.cloud_endpoint);
-        defer self.allocator.free(exec_plan.output);
-        std.debug.print("[executor] output: {s}\n", .{exec_plan.output});
-        try self.journal.record("phase1:executor:infer");
-
-        // refine to knowledge for future sessions
-        try self.mem.refineToKnowledge("executor:last-task", exec_plan.output);
-        try self.journal.record("phase1:memory:refine");
-
-        // ---- Phase 1g: Tool auto-correction ----
-        std.debug.print("\n--- [1g] Tool Auto-Correction ---\n", .{});
-        const parsed_args = try parseCommandLine(self.allocator, exec_plan.output);
-        defer freeArgv(self.allocator, parsed_args);
-
-        var cmd_args_list: std.ArrayListUnmanaged([]const u8) = .{};
-        defer cmd_args_list.deinit(self.allocator);
-
-        const raw_tool = parsed_args[0];
-        const normalized = self.router.normalize(raw_tool);
-        std.debug.print("[autocorrect] resolved '{s}' -> '{s}'\n", .{ raw_tool, normalized });
-
-        try cmd_args_list.append(self.allocator, normalized);
-        for (parsed_args[1..]) |arg| {
-            try cmd_args_list.append(self.allocator, arg);
-        }
-
-        const cmd_args = try cmd_args_list.toOwnedSlice(self.allocator);
-        defer self.allocator.free(cmd_args);
-
-        _ = try self.skill_rt.execute("file-lister", cmd_args[0]);
-        try self.journal.record("phase1:skills:execute");
-
-        // ---- Phase 1h: Sandbox execution with timeout ----
-        std.debug.print("\n--- [1h] Sandbox Execution ---\n", .{});
         const budget = timeout.Budget.begin(self.cfg.timeout.soft_ms, self.cfg.timeout.hard_ms);
-        const result = try self.sbx.runWithBudget(.{
-            .name = "tool.dispatch",
-            .args = cmd_args[0..],
-        }, self.cfg.safety, budget);
+        const result = self.sbx.runWithBudget(.{ .name = "tool.dispatch", .args = argv }, &self.cfg, budget) catch |err| {
+            std.debug.print("[sandbox] blocked or failed: {}\n", .{err});
+            return self.fail(err);
+        };
+        if (result.timed_out) std.debug.print("[sandbox] finished past soft budget ({d} ms)\n", .{self.cfg.timeout.soft_ms});
+        std.debug.print("[sandbox] exit code {d}\n", .{result.exit_code});
 
-        if (result.timed_out) {
-            std.debug.print("[sandbox] execution timed out\n", .{});
-            try self.journal.record("phase1:sandbox:timeout");
-            try self.journal.recordSnapshot("timeout", self.cfg.rollback_log_path);
-            try self.journal.rollbackTxn("phase1");
-            try self.journal.flushToFile(self.cfg.rollback_log_path);
-            return error.RuntimeTimeout;
-        }
-
-        std.debug.print("[sandbox] exit code: {}\n", .{result.exit_code});
-        try self.journal.record("phase1:sandbox:ok");
-
-        // ---- Phase 1i: Finalize ----
-        std.debug.print("\n--- [1i] Finalize ---\n", .{});
-        try self.journal.record("phase1:complete");
-        try self.journal.recordSnapshot("post", self.cfg.rollback_log_path);
-        try self.journal.recordCheckpoint(self.llm.used_vram_mb, self.mem.size(), self.skill_rt.registeredCount());
-        try self.journal.commitTxn("phase1");
+        try self.journal.record("cycle:complete");
+        try self.journal.commitTxn("cycle");
         try self.journal.flushToFile(self.cfg.rollback_log_path);
-
-        std.debug.print("\n=== Phase 1 Runtime Cycle Complete ===\n", .{});
-        std.debug.print("  VRAM: {}/{} MB used\n", .{ self.llm.used_vram_mb, self.llm.total_vram_mb });
-        std.debug.print("  Memory: {} session, {} summaries, {} knowledge\n", .{
-            self.mem.sessionCount(),
-            self.mem.summaryCount(),
-            self.mem.knowledgeCount(),
-        });
-        std.debug.print("  Skills: {} registered\n", .{self.skill_rt.registeredCount()});
-        std.debug.print("  Corrections: {}\n", .{self.router.correctionCount()});
-        std.debug.print("  Exit code: {}\n", .{result.exit_code});
     }
 
+    fn percentile(sorted: []const u64, p: f64) u64 {
+        if (sorted.len == 0) return 0;
+        const idx: usize = @intFromFloat(@ceil(p * @as(f64, @floatFromInt(sorted.len))) - 1);
+        return sorted[@min(idx, sorted.len - 1)];
+    }
+
+    /// `bench`: repeat one request, record latency, peak RSS and failures to CSV.
+    /// Successful runs also feed the calibration file used by the scheduler.
+    pub fn bench(self: *App, opts: BenchOptions, req: scheduler.Request) !void {
+        try std.fs.cwd().makePath(std.fs.path.dirname(opts.out_path) orelse ".");
+        const file = try std.fs.cwd().createFile(opts.out_path, .{ .truncate = true });
+        defer file.close();
+        try file.writeAll("run,ok,model,ctx,attempts,wall_ms,peak_rss_mb,gen_tokens,gen_ms,error\n");
+
+        var walls: std.ArrayListUnmanaged(u64) = .{};
+        defer walls.deinit(self.allocator);
+        var max_rss: u64 = 0;
+        var failures: u32 = 0;
+        var line_buf: [512]u8 = undefined;
+
+        var i: u32 = 0;
+        while (i < opts.runs) : (i += 1) {
+            std.debug.print("\n[bench] run {d}/{d}\n", .{ i + 1, opts.runs });
+            if (self.engine.generate(opts.prompt, req, opts.available_mb)) |g| {
+                defer self.allocator.free(g.text);
+                try walls.append(self.allocator, g.wall_ms);
+                const rss = g.peak_rss_bytes orelse 0;
+                max_rss = @max(max_rss, rss);
+                const line = try std.fmt.bufPrint(&line_buf, "{d},1,{s},{d},{d},{d},{d},{d},{d},\n", .{
+                    i + 1, g.model, g.ctx, g.attempts, g.wall_ms, sysmem.mb(rss), g.gen_tokens orelse 0, g.gen_ms orelse 0,
+                });
+                try file.writeAll(line);
+            } else |err| {
+                failures += 1;
+                const line = try std.fmt.bufPrint(&line_buf, "{d},0,,0,0,0,0,0,0,{s}\n", .{ i + 1, @errorName(err) });
+                try file.writeAll(line);
+            }
+        }
+
+        std.mem.sort(u64, walls.items, {}, std.sort.asc(u64));
+        std.debug.print("\n=== Bench summary ({d} runs) ===\n", .{opts.runs});
+        std.debug.print("  success:      {d}/{d}\n", .{ opts.runs - failures, opts.runs });
+        std.debug.print("  wall p50/p95: {d} / {d} ms\n", .{ percentile(walls.items, 0.5), percentile(walls.items, 0.95) });
+        std.debug.print("  peak RSS max: {d} MB (child process, wait4)\n", .{sysmem.mb(max_rss)});
+        std.debug.print("  csv:          {s}\n", .{opts.out_path});
+    }
+
+    /// `calibrate`: run every model at min and desired context, bypassing the
+    /// scheduler, so models refused on conservative estimates still get measured.
+    pub fn calibrate(self: *App, prompt: []const u8, max_new: u32) !void {
+        if (self.engine.cands.len == 0) return error.NoUsableModels;
+        var owned: ?[]u8 = null;
+        defer if (owned) |t| self.allocator.free(t);
+        const template = try self.engine.llmTemplate(&owned);
+        const prompt_file = "state/prompt.txt";
+        try std.fs.cwd().makePath("state");
+        try std.fs.cwd().writeFile(.{ .sub_path = prompt_file, .data = prompt });
+
+        const Row = struct { name: []const u8, ctx: u32, before_mb: u64, measured_mb: ?u64, tps: ?f64 };
+        var rows: std.ArrayListUnmanaged(Row) = .{};
+        defer rows.deinit(self.allocator);
+
+        for (self.engine.cands, 0..) |c, i| {
+            const top = if (c.max_ctx != 0) @min(self.cfg.desired_ctx, c.max_ctx) else self.cfg.desired_ctx;
+            const ctxs = [_]u32{ self.cfg.min_ctx, top };
+            for (ctxs, 0..) |ctx, k| {
+                if (k == 1 and ctx == ctxs[0]) continue;
+                var row = Row{ .name = c.name, .ctx = ctx, .before_mb = sysmem.mb(c.cost.bytesAt(ctx)), .measured_mb = null, .tps = null };
+                switch (try self.engine.runOnce(template, i, ctx, max_new, prompt, prompt_file, self.cfg.llm_timeout_ms)) {
+                    .ok => |g| {
+                        defer self.allocator.free(g.text);
+                        row.measured_mb = if (g.peak_rss_bytes) |p| sysmem.mb(p) else null;
+                        if (g.gen_tokens) |t| if (g.gen_ms) |ms| if (ms > 0) {
+                            row.tps = @as(f64, @floatFromInt(t)) * 1000.0 / @as(f64, @floatFromInt(ms));
+                        };
+                    },
+                    .failed => {},
+                }
+                try rows.append(self.allocator, row);
+            }
+        }
+
+        std.debug.print("\n=== Calibration ({s}) ===\n", .{self.cfg.calibration_path});
+        std.debug.print("  {s:<20} {s:>6} {s:>14} {s:>12} {s:>9}\n", .{ "model", "ctx", "estimate(MB)", "measured(MB)", "tok/s" });
+        for (rows.items) |r| {
+            if (r.measured_mb) |m| {
+                std.debug.print("  {s:<20} {d:>6} {d:>14} {d:>12} {d:>9.1}\n", .{ r.name, r.ctx, r.before_mb, m, r.tps orelse 0 });
+            } else {
+                std.debug.print("  {s:<20} {d:>6} {d:>14} {s:>12} {s:>9}\n", .{ r.name, r.ctx, r.before_mb, "failed", "-" });
+            }
+        }
+        std.debug.print("  Estimates above are from before this run; `probe` shows the updated ones.\n", .{});
+    }
+
+    /// `selftest`: checks that need no model, runnable on the target device.
     pub fn selftest(self: *App) !void {
-        std.debug.print("[selftest] Phase 1 self-test suite\n", .{});
         var passed: u32 = 0;
         var failed: u32 = 0;
-
-        // ---- Safety defaults ----
-        if (!self.cfg.safety.offline_only) {
-            std.debug.print("[FAIL] safety: offline_only not true\n", .{});
-            failed += 1;
-        } else if (self.cfg.safety.allow_shell) {
-            std.debug.print("[FAIL] safety: allow_shell should be false\n", .{});
-            failed += 1;
-        } else if (self.cfg.safety.allow_network) {
-            std.debug.print("[FAIL] safety: allow_network should be false\n", .{});
-            failed += 1;
-        } else {
-            std.debug.print("[PASS] safety defaults\n", .{});
-            passed += 1;
-        }
-
-        // ---- Policy enforcement ----
-        {
-            var policy_ok = false;
-            _ = self.sbx.runWithBudget(.{
-                .name = "shell",
-                .args = &.{ "curl", "https://example.com" },
-            }, self.cfg.safety, timeout.Budget.begin(self.cfg.timeout.soft_ms, self.cfg.timeout.hard_ms)) catch |err| {
-                if (err == error.NetworkExecutionDenied or err == error.ShellExecutionDenied) {
-                    policy_ok = true;
-                }
-            };
-            if (!policy_ok) {
-                std.debug.print("[FAIL] policy enforcement: network/shell not denied\n", .{});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] policy enforcement\n", .{});
-                passed += 1;
-            }
-        }
-
-        // ---- Sandbox execution ----
-        {
-            const exec_res = try self.sbx.runWithBudget(.{
-                .name = "tool.dispatch",
-                .args = &.{ "echo", "selftest" },
-            }, self.cfg.safety, timeout.Budget.begin(self.cfg.timeout.soft_ms, self.cfg.timeout.hard_ms));
-            if (exec_res.exit_code != 0) {
-                std.debug.print("[FAIL] sandbox execution: exit code {}\n", .{exec_res.exit_code});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] sandbox execution\n", .{});
-                passed += 1;
-            }
-        }
-
-        // ---- Phase 1a: Inference runtime (VRAM tracking, model registration) ----
-        {
-            var test_llm = inference.InferenceRuntime.init(self.allocator);
-            defer test_llm.deinit();
-            test_llm.setBudget(2048);
-
-            try test_llm.registerModel(.planner, .{
-                .path = "test-planner.gguf",
-                .quantization = .q4_0,
-                .max_vram_mb = 1100,
-                .context_tokens = 2048,
-            });
-
-            try test_llm.registerModel(.executor, .{
-                .path = "test-executor.gguf",
-                .quantization = .q4_1,
-                .max_vram_mb = 450,
-                .context_tokens = 1024,
-            });
-
-            // VRAM budget should be 2048, planner 1100 + executor 450 = 1550 < 2048
-            try test_llm.load(.planner);
-            try test_llm.load(.executor);
-            if (test_llm.used_vram_mb != 1550) {
-                std.debug.print("[FAIL] inference: VRAM tracking expected 1550 got {}\n", .{test_llm.used_vram_mb});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] inference VRAM tracking\n", .{});
-                passed += 1;
-            }
-
-            // VRAM exceeded test
-            test_llm.total_vram_mb = 100;
-            if (test_llm.load(.planner)) {
-                std.debug.print("[FAIL] inference: should have exceeded VRAM\n", .{});
-                failed += 1;
-            } else |_| {
-                std.debug.print("[PASS] inference VRAM exceeded\n", .{});
-                passed += 1;
-            }
-
-            // Sensitivity routing
-            const sensitive_task = inference.TaskPayload{ .prompt = "password reset", .sensitivity = .sensitive, .max_tokens = 100 };
-            const route = test_llm.route(sensitive_task);
-            if (route.location != .local) {
-                std.debug.print("[FAIL] inference: sensitive task should route local\n", .{});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] inference sensitivity routing\n", .{});
-                passed += 1;
-            }
-
-            test_llm.setBudget(400);
-            const cloud_route = test_llm.route(.{ .prompt = "heavy research", .sensitivity = .moderate, .max_tokens = 128 });
-            if (cloud_route.location != .cloud) {
-                std.debug.print("[FAIL] inference: low VRAM should route moderate task cloud\n", .{});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] inference cloud routing\n", .{});
-                passed += 1;
-            }
-
-            // Role swap
-            test_llm.total_vram_mb = 2048;
-            test_llm.used_vram_mb = 0;
-            try test_llm.load(.planner);
-            const can_swap = test_llm.canSwap(.planner, .executor);
-            if (!can_swap) {
-                std.debug.print("[FAIL] inference: should be able to swap planner->executor\n", .{});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] inference role swap\n", .{});
-                passed += 1;
-            }
-
-            // Context budget
-            test_llm.setBudget(2048);
-            test_llm.setContextBudget(512);
-            const infer_task = inference.TaskPayload{ .prompt = "test", .sensitivity = .trivial, .max_tokens = 256 };
-            const infer_result = try test_llm.infer(infer_task);
-            defer test_llm.allocator.free(infer_result.output);
-            std.debug.print("[PASS] inference context budget\n", .{});
-            passed += 1;
-        }
-
-        // ---- Phase 1b: Hierarchical memory ----
-        {
-            var test_mem = memory.HierarchicalMemory.init(self.allocator);
-            defer test_mem.deinit();
-
-            try test_mem.put("test-key", "test-value");
-            const got = test_mem.get("test-key");
-            if (got == null or !std.mem.eql(u8, got.?, "test-value")) {
-                std.debug.print("[FAIL] memory: put/get failed\n", .{});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] memory put/get\n", .{});
-                passed += 1;
-            }
-
-            try test_mem.refineToKnowledge("persistent-key", "persistent-value");
-            if (test_mem.knowledgeCount() != 1) {
-                std.debug.print("[FAIL] memory: refineToKnowledge failed\n", .{});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] memory refineToKnowledge\n", .{});
-                passed += 1;
-            }
-
-            const ctx = try test_mem.jitLoad(self.allocator, 4096);
-            defer self.allocator.free(ctx);
-            if (ctx.len == 0) {
-                std.debug.print("[FAIL] memory: jitLoad should return knowledge\n", .{});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] memory jitLoad\n", .{});
-                passed += 1;
-            }
-
-            // consolidation
-            try test_mem.consolidate();
-            std.debug.print("[PASS] memory consolidate\n", .{});
-            passed += 1;
-
-            // search
-            try test_mem.put("alpha", "beta gamma delta");
-            const results = try test_mem.search("gamma", 5);
-            defer self.allocator.free(results);
-            if (results.len == 0) {
-                std.debug.print("[FAIL] memory: search should find 'gamma'\n", .{});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] memory search\n", .{});
-                passed += 1;
-            }
-        }
-
-        // ---- Phase 2 foundation: guarded memory manager ----
-        {
-            var manager = try phase2_memory.MemoryManager.init(self.allocator, "state/memory.log");
-            defer manager.deinit();
-
-            if (!manager.canAcceptWrites()) {
-                std.debug.print("[FAIL] memory manager: should accept writes before shutdown\n", .{});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] memory manager lifecycle guard (pre-shutdown)\n", .{});
-                passed += 1;
-            }
-
-            try manager.writeRecordCreate("selftest-key", "selftest-value");
-            manager.shutdown();
-
-            if (manager.canAcceptWrites()) {
-                std.debug.print("[FAIL] memory manager: should reject writes after shutdown\n", .{});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] memory manager lifecycle guard (shutdown)\n", .{});
-                passed += 1;
-            }
-
-            if (manager.writeRecordCreate("late-key", "late-value")) {
-                std.debug.print("[FAIL] memory manager: write should fail after shutdown\n", .{});
-                failed += 1;
-            } else |err| {
-                if (err == error.ShutdownInProgress) {
-                    std.debug.print("[PASS] memory manager rejects writes during shutdown\n", .{});
-                    passed += 1;
+        const check = struct {
+            fn f(ok: bool, name: []const u8, p: *u32, fl: *u32) void {
+                if (ok) {
+                    std.debug.print("[PASS] {s}\n", .{name});
+                    p.* += 1;
                 } else {
-                    std.debug.print("[FAIL] memory manager: unexpected error after shutdown: {}\n", .{err});
-                    failed += 1;
+                    std.debug.print("[FAIL] {s}\n", .{name});
+                    fl.* += 1;
                 }
             }
-        }
+        }.f;
 
-        // ---- Phase 1c: Skills runtime ----
-        {
-            var test_skills = skills.SkillRuntime.init(self.allocator);
-            defer test_skills.deinit();
+        const defaults = config.default();
+        check(defaults.safety.offline_only and !defaults.safety.allow_shell and !defaults.safety.allow_network, "safety defaults", &passed, &failed);
 
-            try test_skills.register(.{
-                .name = "test-skill",
-                .version = "1.0.0",
-                .capabilities = &.{
-                    .{ .syscall = .file_read, .allowed = true, .name = "read" },
-                },
-            });
+        const denied = if (sandbox.Sandbox.enforcePolicy(&.{ "/usr/bin/curl", "https://example.com" }, self.cfg.tool_allowlist)) false else |_| true;
+        check(denied, "allowlist denies absolute-path curl", &passed, &failed);
+        const denied_shell = if (sandbox.Sandbox.enforcePolicy(&.{ "sh", "-c", "id" }, self.cfg.tool_allowlist)) false else |_| true;
+        check(denied_shell, "allowlist denies shell", &passed, &failed);
 
-            if (!test_skills.isRegistered("test-skill")) {
-                std.debug.print("[FAIL] skills: registration failed\n", .{});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] skills registration\n", .{});
-                passed += 1;
-            }
+        const echo_ok = blk: {
+            const r = self.sbx.runWithBudget(.{ .name = "tool.dispatch", .args = &.{ "echo", "selftest" } }, &self.cfg, timeout.Budget.begin(self.cfg.timeout.soft_ms, self.cfg.timeout.hard_ms)) catch break :blk false;
+            break :blk r.exit_code == 0;
+        };
+        check(echo_ok, "allowlisted command executes", &passed, &failed);
 
-            const result = try test_skills.execute("test-skill", "input-data");
-            if (!result.success) {
-                std.debug.print("[FAIL] skills: execution failed: {s}\n", .{result.err_msg orelse "unknown"});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] skills execution\n", .{});
-                passed += 1;
-            }
+        const killed = blk: {
+            var cfg = self.cfg;
+            const allow = [_][]const u8{"sleep"};
+            cfg.tool_allowlist = &allow;
+            const started = std.time.milliTimestamp();
+            _ = self.sbx.runWithBudget(.{ .name = "tool.dispatch", .args = &.{ "sleep", "30" } }, &cfg, timeout.Budget.begin(100, 300)) catch |err| {
+                break :blk err == error.HardTimeoutExceeded and std.time.milliTimestamp() - started < 2000;
+            };
+            break :blk false;
+        };
+        check(killed, "hard timeout kills a hung command", &passed, &failed);
 
-            // policy enforcement
-            _ = try test_skills.execute("test-skill", "data");
-            if (test_skills.registeredCount() != 1) {
-                std.debug.print("[FAIL] skills: registeredCount failed\n", .{});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] skills registeredCount\n", .{});
-                passed += 1;
-            }
+        const snap_ok = if (sysmem.snapshot()) |s| s.total_bytes > 0 and s.host_available_bytes <= s.total_bytes else |_| false;
+        check(snap_ok, "live memory snapshot", &passed, &failed);
 
-            const skill_list = try test_skills.listSkills();
-            defer self.allocator.free(skill_list);
-            if (skill_list.len != 1) {
-                std.debug.print("[FAIL] skills: listSkills failed\n", .{});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] skills listSkills\n", .{});
-                passed += 1;
-            }
-        }
+        const gguf_ok = blk: {
+            var w = gguf.TestWriter.begin(self.allocator, 4) catch break :blk false;
+            defer w.deinit();
+            w.kvString("general.architecture", "llama") catch break :blk false;
+            w.kvU32("llama.block_count", 24) catch break :blk false;
+            w.kvU32("llama.embedding_length", 2048) catch break :blk false;
+            w.kvU32("llama.attention.head_count", 32) catch break :blk false;
+            const info = gguf.parseHeader(w.bytes()) catch break :blk false;
+            break :blk info.kvBytesPerToken() == 24 * 32 * 128 * 2;
+        };
+        check(gguf_ok, "GGUF metadata parse + KV estimate", &passed, &failed);
 
-        // ---- Phase 1d: Tool auto-correction ----
-        {
-            var test_corrector = try tools.AutoCorrector.init(self.allocator);
-            defer test_corrector.deinit();
+        const ladder_ok = blk: {
+            const MB: u64 = 1 << 20;
+            const cands = [_]scheduler.Candidate{
+                .{ .name = "big", .quality = 2, .max_ctx = 8192, .cost = .{ .weights_bytes = 1000 * MB, .kv_bytes_per_token = 96 * 1024 } },
+                .{ .name = "small", .quality = 1, .max_ctx = 8192, .cost = .{ .weights_bytes = 250 * MB, .kv_bytes_per_token = 40 * 1024 } },
+            };
+            var trace: scheduler.Trace = .{};
+            defer trace.deinit(self.allocator);
+            const c = scheduler.choose(self.allocator, &cands, .{ .desired_ctx = 4096, .min_ctx = 1024, .sensitive = true }, .{ .available_bytes = 900 * MB, .headroom_bytes = 256 * MB }, true, &trace) catch break :blk false;
+            break :blk c == .local and c.local.candidate == 1;
+        };
+        check(ladder_ok, "scheduler steps down instead of failing", &passed, &failed);
 
-            const normalized = test_corrector.normalize("dir");
-            if (!std.mem.eql(u8, normalized, "ls")) {
-                std.debug.print("[FAIL] autocorrect: 'dir' should normalize to 'ls', got '{s}'\n", .{normalized});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] autocorrect alias resolution\n", .{});
-                passed += 1;
-            }
+        check(std.mem.eql(u8, self.router.normalize("dir"), "ls"), "tool alias normalization", &passed, &failed);
 
-            const unknown = test_corrector.normalize("unknown-tool");
-            if (!std.mem.eql(u8, unknown, "unknown-tool")) {
-                std.debug.print("[FAIL] autocorrect: unknown tool should pass through\n", .{});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] autocorrect unknown tool passthrough\n", .{});
-                passed += 1;
-            }
+        const journal_ok = blk: {
+            self.journal.beginTxn("selftest") catch break :blk false;
+            self.journal.commitTxn("selftest") catch break :blk false;
+            self.journal.flushToFile(self.cfg.rollback_log_path) catch break :blk false;
+            break :blk true;
+        };
+        check(journal_ok, "rollback journal flush", &passed, &failed);
 
-            const fallbacks = test_corrector.getFallbacks("cdp-search");
-            if (fallbacks == null) {
-                std.debug.print("[FAIL] autocorrect: should have fallbacks for cdp-search\n", .{});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] autocorrect fallback chains\n", .{});
-                passed += 1;
-            }
-
-            if (test_corrector.correctionCount() == 0) {
-                std.debug.print("[FAIL] autocorrect: corrections should have been counted\n", .{});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] autocorrect correction counting\n", .{});
-                passed += 1;
-            }
-        }
-
-        // ---- Phase 1e: Rollback journal with checkpoints ----
-        {
-            try self.journal.beginTxn("selftest-phase1");
-            try self.journal.record("selftest:phase1:start");
-            try self.journal.recordCheckpoint(1100, 3, 1);
-            try self.journal.recordCheckpoint(1550, 5, 2);
-            try self.journal.commitTxn("selftest-phase1");
-            try self.journal.flushToFile(self.cfg.rollback_log_path);
-
-            if (self.journal.checkpoints.items.len == 0) {
-                std.debug.print("[FAIL] journal: checkpoints should exist\n", .{});
-                failed += 1;
-            } else {
-                std.debug.print("[PASS] journal checkpoint recording\n", .{});
-                passed += 1;
-            }
-
-            std.debug.print("[PASS] journal transaction lifecycle\n", .{});
-            passed += 1;
-        }
-
-        // ---- Summary ----
-        std.debug.print("\n=== Selftest Results: {}/{} passed, {} failed ===\n", .{
-            passed,
-            passed + failed,
-            failed,
-        });
-
+        std.debug.print("\n=== Selftest: {d}/{d} passed ===\n", .{ passed, passed + failed });
         if (failed > 0) return error.SelftestFailed;
     }
 };
+
+test "command parsing strips fences and stops at shell operators" {
+    const a = std.testing.allocator;
+    const allow = &config.default_tool_allowlist;
+    const argv = try App.parseCommandLine(a, "```bash\nls -la /tmp | grep x\n```", allow);
+    defer App.freeArgv(a, argv);
+    try std.testing.expectEqual(@as(usize, 3), argv.len);
+    try std.testing.expectEqualStrings("ls", argv[0]);
+    try std.testing.expectEqualStrings("/tmp", argv[2]);
+}
+
+test "command parsing picks the allowlisted line from a commented script" {
+    const a = std.testing.allocator;
+    const allow = &config.default_tool_allowlist;
+    // Real SmolLM2-360M output for "show how much disk space is free".
+    const out = "```bash\n# Open the CLI agent\ncd /path/to/your/directory\n\n# Check the available disk space\ndf -h\n```";
+    const argv = try App.parseCommandLine(a, out, allow);
+    defer App.freeArgv(a, argv);
+    try std.testing.expectEqualStrings("df", argv[0]);
+    try std.testing.expectEqualStrings("-h", argv[1]);
+    // No allowlisted line: first command line comes back for the sandbox to reject.
+    const bad = try App.parseCommandLine(a, "$ curl x\nwget y", allow);
+    defer App.freeArgv(a, bad);
+    try std.testing.expectEqualStrings("curl", bad[0]);
+}
