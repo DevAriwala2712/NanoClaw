@@ -40,3 +40,14 @@ You'll need to update:
 3. **PHASE0_README.md** - Update dependency section
 
 These files should reference Zig 0.15.2 as the supported baseline.
+
+### macOS 27
+
+Zig 0.15.2 cannot link against the macOS 27 SDK (`undefined symbol: _sigemptyset`, …), so `zig build` fails there. Build and test against an explicit older macOS target, which uses Zig's bundled libc stubs:
+
+```bash
+zig build-exe src/main.zig -target aarch64-macos.15.0 -femit-bin=nanoclaw-next
+zig test src/tests.zig -target aarch64-macos.15.0
+```
+
+`scripts/setup.sh` applies this fallback automatically on macOS.

@@ -1,22 +1,8 @@
-const std = @import("std");
+// Kernel-level isolation (Landlock filesystem rules, seccomp-bpf syscall
+// filter, PR_SET_NO_NEW_PRIVS) is planned in docs/PLAN.md milestone M3 and
+// must be tested on Linux before it is claimed anywhere. Until then this
+// module only reports the truth.
 
-pub fn applyIsolation() !void {
-    if (@import("builtin").os.tag != .linux) {
-        return;
-    }
-
-    std.debug.print("[sandbox] applying seccomp BPF filter\n", .{});
-    std.debug.print("[sandbox] blocking: execve, open, openat\n", .{});
-    std.debug.print("[sandbox] allowing: read, write, close, nice\n", .{});
-    std.debug.print("[sandbox] seccomp enforcement active\n", .{});
-}
-
-pub fn getRestrictedSyscalls() []const []const u8 {
-    const restricted = &[_][]const u8{
-        "execve",
-        "fork",
-        "vfork",
-        "clone",
-    };
-    return restricted[0..];
+pub fn isolationStatus() []const u8 {
+    return "none: executable allowlist + hard timeout only (Landlock/seccomp planned, M3)";
 }

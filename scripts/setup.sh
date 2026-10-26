@@ -21,11 +21,20 @@ fi
 echo "[setup] Zig version ok: $zig_version"
 
 echo "[setup] Running compile check"
-zig build
+if ! zig build; then
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    echo "[setup] zig build failed; on macOS 27 this is a known Zig 0.15.2 SDK issue."
+    echo "[setup] Falling back to an explicit macOS 15 target (see README: Known issues)."
+    mkdir -p zig-out/bin
+    zig build-exe src/main.zig -target "$(uname -m | sed 's/arm64/aarch64/')-macos.15.0" -femit-bin=zig-out/bin/nanoclaw-next
+  else
+    exit 1
+  fi
+fi
 
 echo "[setup] Initializing runtime config and state"
-zig build run -- init
+./zig-out/bin/nanoclaw-next init
 
 echo "[setup] Setup complete"
-echo "[setup] Next: zig build run -- --demo"
-echo "[setup] Next: zig build run -- selftest"
+echo "[setup] Next: ./zig-out/bin/nanoclaw-next selftest"
+echo "[setup] Next: add model= lines to nanoclaw-next.conf, then ./zig-out/bin/nanoclaw-next probe"
