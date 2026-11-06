@@ -71,7 +71,9 @@ PATH="$PWD/bin:$PATH" \
 
 That wrapper execs llama-completion with `-cnv -st --temp 0 -s 1 -ngl 0 --simple-io -t 4 -tb 4 --fit off`, followed by the script's arguments. Full raw logs, commands, preliminary runs and recovery configuration are also preserved locally in `state/m2-2026-11-05/evidence.tar.gz` (ignored by Git).
 
-## Remaining M2 acceptance
+## Remaining M2 acceptance (as of 2026-11-05)
+
+Follow-up: the Q4/Q5/Q8 grid was completed on the Ubuntu VM on 2026-11-06; see the [grid report](../2026-11-06-quantization-grid/REPORT.md). Physical Pi validation and the pressure-policy work remain outstanding.
 
 1. Repeat on a physical Raspberry Pi 5 4 GB; VM timings do not predict Pi performance.
 2. Extend held-out estimation to Q5_K_M/Q8_0 and contexts 512–8192, with repeated runs.
