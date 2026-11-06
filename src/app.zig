@@ -16,6 +16,7 @@ pub const BenchOptions = struct {
     runs: u32 = 5,
     out_path: []const u8 = "state/bench.csv",
     available_mb: ?u64 = null,
+    freeze_calibration: bool = false,
 };
 
 pub const App = struct {
@@ -141,7 +142,7 @@ pub const App = struct {
                 c.name, info.arch(), info.block_count, info.head_count, info.kvHeads(), info.headDimK(), info.context_length,
             });
             std.debug.print("    weights {d} MB, KV {d} KB/token, overhead {d} MB {s}\n", .{
-                sysmem.mb(c.cost.weights_bytes), c.cost.kv_bytes_per_token / 1024, sysmem.mb(c.cost.overhead_bytes),
+                sysmem.mb(c.cost.weights_bytes),                                                c.cost.kv_bytes_per_token / 1024, sysmem.mb(c.cost.overhead_bytes),
                 if (c.cost.calibrated) "(measured)" else "(default; run `bench` to calibrate)",
             });
             std.debug.print("    est. total @ctx {d}: {d} MB, @ctx {d}: {d} MB", .{
@@ -186,8 +187,7 @@ pub const App = struct {
         try self.journal.record("cycle:start");
 
         std.debug.print("\n--- [1] Plan (prefer quality) ---\n", .{});
-        const planner_prompt = try std.fmt.allocPrint(self.allocator,
-            "You are an AI planner for a CLI agent. Break down the user's intent into a short step-by-step plan. Output ONLY the plan. Intent: {s}", .{intent});
+        const planner_prompt = try std.fmt.allocPrint(self.allocator, "You are an AI planner for a CLI agent. Break down the user's intent into a short step-by-step plan. Output ONLY the plan. Intent: {s}", .{intent});
         defer self.allocator.free(planner_prompt);
         var plan_req = self.engine.defaultRequest();
         plan_req.prefer = .quality;
@@ -202,8 +202,7 @@ pub const App = struct {
         try self.mem.put("plan:result", plan.text);
 
         std.debug.print("\n--- [2] Command (prefer quality) ---\n", .{});
-        const exec_prompt = try std.fmt.allocPrint(self.allocator,
-            "Convert this intent into EXACTLY ONE unix command. Output ONLY the executable and its arguments. No markdown, no explanation, no shell operators.\nIntent: {s}\nPlan: {s}", .{ intent, plan.text });
+        const exec_prompt = try std.fmt.allocPrint(self.allocator, "Convert this intent into EXACTLY ONE unix command. Output ONLY the executable and its arguments. No markdown, no explanation, no shell operators.\nIntent: {s}\nPlan: {s}", .{ intent, plan.text });
         defer self.allocator.free(exec_prompt);
         var exec_req = self.engine.defaultRequest();
         // Measured: SmolLM2-360M turned "show free disk space" into
@@ -249,39 +248,80 @@ pub const App = struct {
         try std.fs.cwd().makePath(std.fs.path.dirname(opts.out_path) orelse ".");
         const file = try std.fs.cwd().createFile(opts.out_path, .{ .truncate = true });
         defer file.close();
-        try file.writeAll("run,ok,model,ctx,attempts,wall_ms,peak_rss_mb,gen_tokens,gen_ms,error\n");
+        const sidecar_path = try std.fmt.allocPrint(self.allocator, "{s}.requests.jsonl", .{opts.out_path});
+        defer self.allocator.free(sidecar_path);
+        const sidecar = try std.fs.cwd().createFile(sidecar_path, .{});
+        defer sidecar.close();
+        const previous_record_calibration = self.engine.record_calibration;
+        self.engine.record_calibration = !opts.freeze_calibration;
+        defer self.engine.record_calibration = previous_record_calibration;
+        try file.writeAll("run,ok,model,ctx,attempts,wall_ms,peak_rss_mb,gen_tokens,gen_ms,error,total_wall_ms,max_attempt_rss_bytes,deadline_missed,schema_version\n");
 
         var walls: std.ArrayListUnmanaged(u64) = .{};
         defer walls.deinit(self.allocator);
-        var max_rss: u64 = 0;
         var failures: u32 = 0;
-        var line_buf: [512]u8 = undefined;
-
         var i: u32 = 0;
         while (i < opts.runs) : (i += 1) {
-            std.debug.print("\n[bench] run {d}/{d}\n", .{ i + 1, opts.runs });
+            var generation: ?engine_mod.Generation = null;
+            var error_name: ?[]const u8 = null;
             if (self.engine.generate(opts.prompt, req, opts.available_mb)) |g| {
-                defer self.allocator.free(g.text);
-                try walls.append(self.allocator, g.wall_ms);
-                const rss = g.peak_rss_bytes orelse 0;
-                max_rss = @max(max_rss, rss);
-                const line = try std.fmt.bufPrint(&line_buf, "{d},1,{s},{d},{d},{d},{d},{d},{d},\n", .{
-                    i + 1, g.model, g.ctx, g.attempts, g.wall_ms, sysmem.mb(rss), g.gen_tokens orelse 0, g.gen_ms orelse 0,
-                });
-                try file.writeAll(line);
+                generation = g;
+                try walls.append(self.allocator, self.engine.last_request.total_wall_ms);
             } else |err| {
                 failures += 1;
-                const line = try std.fmt.bufPrint(&line_buf, "{d},0,,0,0,0,0,0,0,{s}\n", .{ i + 1, @errorName(err) });
-                try file.writeAll(line);
+                error_name = @errorName(err);
             }
+            defer if (generation) |g| self.allocator.free(g.text);
+            const r = &self.engine.last_request;
+            const evidence = try std.json.Stringify.valueAlloc(self.allocator, .{
+                .schema_version = @as(u8, 2),
+                .run = i + 1,
+                .status = r.status,
+                .error_name = error_name,
+                .prompt = opts.prompt,
+                .response = if (generation) |g| g.text else null,
+                .total_wall_ms = r.total_wall_ms,
+                .deadline_ms = r.deadline_ms,
+                .deadline_missed = r.deadline_missed,
+                .max_attempt_rss_bytes = r.max_attempt_rss_bytes,
+                .attempts = r.records[0..r.count],
+                .calibration_frozen = opts.freeze_calibration,
+            }, .{});
+            defer self.allocator.free(evidence);
+            try sidecar.writeAll(evidence);
+            try sidecar.writeAll("\n");
+            // Empty CSV cells mean unavailable; legacy wall/RSS fields remain
+            // successful-child-only. Request totals are separate appended fields.
+            const child_wall = try optionalNumber(self.allocator, if (generation) |g| g.wall_ms else null);
+            defer self.allocator.free(child_wall);
+            const child_rss = try optionalNumber(self.allocator, if (generation) |g| (if (g.peak_rss_bytes) |rss| sysmem.mb(rss) else null) else null);
+            defer self.allocator.free(child_rss);
+            const tokens = try optionalNumber(self.allocator, if (generation) |g| (if (g.gen_tokens) |n| @as(u64, n) else null) else null);
+            defer self.allocator.free(tokens);
+            const gen_ms = try optionalNumber(self.allocator, if (generation) |g| g.gen_ms else null);
+            defer self.allocator.free(gen_ms);
+            const max_rss = try optionalNumber(self.allocator, r.max_attempt_rss_bytes);
+            defer self.allocator.free(max_rss);
+            const line = try std.fmt.allocPrint(self.allocator, "{d},{d},{s},{d},{d},{s},{s},{s},{s},{s},{d},{s},{d},2\n", .{
+                i + 1,                                      @intFromBool(generation != null), if (generation) |g| g.model else "",
+                if (generation) |g| g.ctx else @as(u32, 0), r.count,                          child_wall,
+                child_rss,                                  tokens,                           gen_ms,
+                error_name orelse "",                       r.total_wall_ms,                  max_rss,
+                @intFromBool(r.deadline_missed),
+            });
+            defer self.allocator.free(line);
+            try file.writeAll(line);
         }
-
         std.mem.sort(u64, walls.items, {}, std.sort.asc(u64));
-        std.debug.print("\n=== Bench summary ({d} runs) ===\n", .{opts.runs});
-        std.debug.print("  success:      {d}/{d}\n", .{ opts.runs - failures, opts.runs });
-        std.debug.print("  wall p50/p95: {d} / {d} ms\n", .{ percentile(walls.items, 0.5), percentile(walls.items, 0.95) });
-        std.debug.print("  peak RSS max: {d} MB (child process, wait4)\n", .{sysmem.mb(max_rss)});
-        std.debug.print("  csv:          {s}\n", .{opts.out_path});
+        std.debug.print("\n=== Bench summary ({d} runs) ===\n  completed: {d}/{d}\n", .{ opts.runs, opts.runs - failures, opts.runs });
+        if (walls.items.len > 0) {
+            std.debug.print("  successful request wall p50/p95 (retries included): {d} / {d} ms\n", .{ percentile(walls.items, 0.5), percentile(walls.items, 0.95) });
+        } else std.debug.print("  successful request wall p50/p95: N/A\n", .{});
+        std.debug.print("  csv: {s}\n  request evidence: {s}\n", .{ opts.out_path, sidecar_path });
+    }
+
+    fn optionalNumber(allocator: std.mem.Allocator, value: ?u64) ![]u8 {
+        return if (value) |v| std.fmt.allocPrint(allocator, "{d}", .{v}) else allocator.dupe(u8, "");
     }
 
     /// `calibrate`: run every model at min and desired context, bypassing the

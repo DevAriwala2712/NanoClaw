@@ -54,17 +54,19 @@ pub fn run(allocator: std.mem.Allocator, argv: []const []const u8, opts: Options
     child.stderr_behavior = .Pipe;
     child.request_resource_usage_statistics = true;
 
-    const started = std.time.milliTimestamp();
+    var timer = try std.time.Timer.start();
     try child.spawn();
-
-    if (opts.stdin_data) |data| {
-        if (child.stdin) |*pipe| {
-            // Prompts are small; a child that never reads stdin gets EPIPE, not a hang.
-            pipe.writeAll(data) catch {};
-            pipe.close();
-            child.stdin = null;
-        }
+    errdefer {
+        _ = child.kill() catch {};
     }
+    try child.waitForSpawn();
+    // Feed input without blocking deadline enforcement or output draining.
+    if (child.stdin) |pipe| {
+        const flags = try std.posix.fcntl(pipe.handle, std.posix.F.GETFL, 0);
+        const nonblock: u32 = @bitCast(std.posix.O{ .NONBLOCK = true });
+        _ = try std.posix.fcntl(pipe.handle, std.posix.F.SETFL, flags | nonblock);
+    }
+    var input_offset: usize = 0;
 
     var poller = std.Io.poll(allocator, enum { stdout, stderr }, .{
         .stdout = child.stdout.?,
@@ -74,11 +76,23 @@ pub fn run(allocator: std.mem.Allocator, argv: []const []const u8, opts: Options
 
     var killed_for: ?Outcome = null;
     while (true) {
-        const elapsed: u64 = @intCast(@max(0, std.time.milliTimestamp() - started));
+        const elapsed = timer.read() / std.time.ns_per_ms;
         if (elapsed >= opts.timeout_ms) {
             killHard(&child);
             killed_for = .timed_out;
             break;
+        }
+        if (child.stdin) |pipe| {
+            const data = opts.stdin_data.?;
+            const written = pipe.write(data[input_offset..]) catch |err| switch (err) {
+                error.WouldBlock => 0,
+                else => data.len - input_offset,
+            };
+            input_offset += written;
+            if (input_offset == data.len) {
+                pipe.close();
+                child.stdin = null;
+            }
         }
         const remaining_ms = opts.timeout_ms - elapsed;
         const slice_ms: u64 = @min(remaining_ms, 50);
@@ -90,11 +104,28 @@ pub fn run(allocator: std.mem.Allocator, argv: []const []const u8, opts: Options
             killed_for = .output_limit;
             break;
         }
-        if (!keep_polling) break;
+        // EOF does not mean the process exited: a child can close both pipes
+        // and continue running. Reap nonblocking and retain wait4 statistics.
+        if (!keep_polling) {
+            var usage: std.posix.rusage = undefined;
+            const waited = std.posix.wait4(child.id, std.posix.W.NOHANG, &usage);
+            if (waited.pid != 0) {
+                child.resource_usage_statistics.rusage = usage;
+                const status = waited.status;
+                child.term = if (std.posix.W.IFEXITED(status))
+                    .{ .Exited = std.posix.W.EXITSTATUS(status) }
+                else if (std.posix.W.IFSIGNALED(status))
+                    .{ .Signal = std.posix.W.TERMSIG(status) }
+                else
+                    .{ .Unknown = status };
+                break;
+            }
+            std.Thread.sleep(@as(u64, @min(remaining_ms, 5)) * std.time.ns_per_ms);
+        }
     }
 
     const term = try child.wait();
-    const wall_ms: u64 = @intCast(@max(0, std.time.milliTimestamp() - started));
+    const wall_ms = timer.read() / std.time.ns_per_ms;
 
     const stdout = try poller.toOwnedSlice(.stdout);
     errdefer allocator.free(stdout);
@@ -109,6 +140,10 @@ pub fn run(allocator: std.mem.Allocator, argv: []const []const u8, opts: Options
     };
     if (killed_for) |why| {
         result.outcome = why;
+        result.signal = switch (term) {
+            .Signal => |sig| sig,
+            else => 0,
+        };
         return result;
     }
     switch (term) {
@@ -154,7 +189,7 @@ test "external SIGKILL is reported as likely OOM" {
 test "output limit kills a runaway child" {
     if (builtin.os.tag != .linux and builtin.os.tag != .macos) return error.SkipZigTest;
     const a = std.testing.allocator;
-    var r = try run(a, &.{ "/usr/bin/yes" }, .{ .timeout_ms = 5000, .max_output_bytes = 4096 });
+    var r = try run(a, &.{"/usr/bin/yes"}, .{ .timeout_ms = 5000, .max_output_bytes = 4096 });
     defer r.deinit(a);
     try std.testing.expectEqual(Outcome.output_limit, r.outcome);
 }
