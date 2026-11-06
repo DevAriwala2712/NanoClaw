@@ -1,0 +1,24 @@
+{
+  "baseline": {
+    "success": 0,
+    "runs": 5,
+    "success_p50_ms": null,
+    "success_p95_ms": null,
+    "all_attempt_p50_ms": 1997,
+    "all_attempt_p95_ms": 2958,
+    "max_command_peak_rss_kib": 1570348,
+    "max_cgroup_peak_bytes": 1610612736,
+    "oom_kills": 5
+  },
+  "adaptive": {
+    "success": 5,
+    "runs": 5,
+    "success_p50_ms": 810,
+    "success_p95_ms": 911,
+    "all_attempt_p50_ms": 810,
+    "all_attempt_p95_ms": 911,
+    "max_command_peak_rss_kib": 568876,
+    "max_cgroup_peak_bytes": 628404224,
+    "oom_kills": 0
+  }
+}

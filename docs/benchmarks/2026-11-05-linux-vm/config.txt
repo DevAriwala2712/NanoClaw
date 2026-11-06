@@ -1,0 +1,28 @@
+# Tool execution
+timeout_hard_ms=1500
+timeout_soft_ms=800
+tool_allowlist=ls,cat,echo,uname,df,uptime,date,pwd,whoami,head,tail,wc,free
+offline_only=true
+allow_shell=false
+allow_network=false
+rollback_log_path=./state/rollback.log
+
+# Adaptive inference
+# memory_budget_mb=0 means: use memory actually available right now.
+memory_budget_mb=0
+memory_headroom_mb=256
+desired_ctx=4096
+min_ctx=512
+llm_timeout_ms=120000
+calibration_path=./state/calibration.tsv
+# llama.cpp command template. Placeholders: {model} {ctx} {n} {prompt_file}
+# The prompt is also written to stdin. Empty = use $LOCAL_LLM_CMD.
+# llm_cmd=/home/ubuntu/llama-b11669/llama-completion -m {model} -c {ctx} -n {n} -f {prompt_file} --no-display-prompt
+llm_cmd=
+# Models, best first is not required: model=<name>,<path.gguf>,<quality>
+# model=smollm2-1.7b,models/SmolLM2-1.7B-Instruct-Q4_K_M.gguf,3
+# model=smollm2-360m,models/SmolLM2-360M-Instruct-Q4_K_M.gguf,1
+cloud_endpoint=
+llm_cmd=/home/ubuntu/llama-b11669/llama-completion -m {model} -c {ctx} -n {n} -f {prompt_file} -cnv -st --no-display-prompt --temp 0 -s 1 -ngl 0 --simple-io -t 4 -tb 4 --fit off
+model=smollm2-1.7b,models/SmolLM2-1.7B-Instruct-Q4_K_M.gguf,3
+model=smollm2-360m,models/SmolLM2-360M-Instruct-Q4_K_M.gguf,1

@@ -1,0 +1,244 @@
+{
+  "baseline-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 5207,
+      "oom": 1,
+      "oom_kill": 1,
+      "oom_group_kill": 0
+    },
+    "memory.max": 1610612736,
+    "memory.swap.max": 0,
+    "memory.peak": 1610612736,
+    "max-rss-kib": 1570100
+  },
+  "adaptive-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 1610612736,
+    "memory.swap.max": 0,
+    "memory.peak": 628404224,
+    "max-rss-kib": 568612
+  },
+  "baseline-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 5193,
+      "oom": 1,
+      "oom_kill": 1,
+      "oom_group_kill": 0
+    },
+    "memory.max": 1610612736,
+    "memory.swap.max": 0,
+    "memory.peak": 1610612736,
+    "max-rss-kib": 1570348
+  },
+  "adaptive-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 1610612736,
+    "memory.swap.max": 0,
+    "memory.peak": 628252672,
+    "max-rss-kib": 568752
+  },
+  "baseline-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 5188,
+      "oom": 1,
+      "oom_kill": 1,
+      "oom_group_kill": 0
+    },
+    "memory.max": 1610612736,
+    "memory.swap.max": 0,
+    "memory.peak": 1610612736,
+    "max-rss-kib": 1570000
+  },
+  "adaptive-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 1610612736,
+    "memory.swap.max": 0,
+    "memory.peak": 627875840,
+    "max-rss-kib": 568876
+  },
+  "baseline-4": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 5216,
+      "oom": 1,
+      "oom_kill": 1,
+      "oom_group_kill": 0
+    },
+    "memory.max": 1610612736,
+    "memory.swap.max": 0,
+    "memory.peak": 1610612736,
+    "max-rss-kib": 1570228
+  },
+  "adaptive-4": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 1610612736,
+    "memory.swap.max": 0,
+    "memory.peak": 628125696,
+    "max-rss-kib": 568876
+  },
+  "baseline-5": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 5234,
+      "oom": 1,
+      "oom_kill": 1,
+      "oom_group_kill": 0
+    },
+    "memory.max": 1610612736,
+    "memory.swap.max": 0,
+    "memory.peak": 1610612736,
+    "max-rss-kib": 1570224
+  },
+  "adaptive-5": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 1610612736,
+    "memory.swap.max": 0,
+    "memory.peak": 628125696,
+    "max-rss-kib": 568624
+  },
+  "recovery": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 4849,
+      "oom": 1,
+      "oom_kill": 1,
+      "oom_group_kill": 0
+    },
+    "memory.max": 1610612736,
+    "memory.swap.max": 0,
+    "memory.peak": 1610612736,
+    "max-rss-kib": 1570368
+  }
+}

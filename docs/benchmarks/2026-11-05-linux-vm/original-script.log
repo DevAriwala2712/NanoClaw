@@ -1,0 +1,62 @@
+[compare] baseline: /home/ubuntu/NanoClaw/state/m2-vm/baseline-wrapper.sh, fixed model, ctx=4096, cap=1536M
+  run 1: exit 137 (1647 ms)
+  run 2: exit 137 (1606 ms)
+  run 3: exit 137 (1558 ms)
+  run 4: exit 137 (1542 ms)
+  run 5: exit 137 (1567 ms)
+[compare] nanoclaw-next: adaptive, same cap
+
+[bench] run 1/5
+[scheduler] usable memory 1219 MB (available 1475 MB - headroom 256 MB)
+[scheduler]   smollm2-1.7b         ctx=4096   need  2813 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-1.7b         ctx=2048   need  2429 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-1.7b         ctx=1024   need  2237 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-1.7b         ctx=512    need  2141 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-360m         ctx=4096   need   556 MB  ~956 ms  -> fits
+[engine] running smollm2-360m ctx=4096
+
+[bench] run 2/5
+[scheduler] usable memory 987 MB (available 1243 MB - headroom 256 MB)
+[scheduler]   smollm2-1.7b         ctx=4096   need  2813 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-1.7b         ctx=2048   need  2429 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-1.7b         ctx=1024   need  2237 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-1.7b         ctx=512    need  2141 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-360m         ctx=4096   need   556 MB  ~956 ms  -> fits
+[engine] running smollm2-360m ctx=4096
+
+[bench] run 3/5
+[scheduler] usable memory 987 MB (available 1243 MB - headroom 256 MB)
+[scheduler]   smollm2-1.7b         ctx=4096   need  2813 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-1.7b         ctx=2048   need  2429 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-1.7b         ctx=1024   need  2237 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-1.7b         ctx=512    need  2141 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-360m         ctx=4096   need   556 MB  ~956 ms  -> fits
+[engine] running smollm2-360m ctx=4096
+
+[bench] run 4/5
+[scheduler] usable memory 987 MB (available 1243 MB - headroom 256 MB)
+[scheduler]   smollm2-1.7b         ctx=4096   need  2813 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-1.7b         ctx=2048   need  2429 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-1.7b         ctx=1024   need  2237 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-1.7b         ctx=512    need  2141 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-360m         ctx=4096   need   556 MB  ~956 ms  -> fits
+[engine] running smollm2-360m ctx=4096
+
+[bench] run 5/5
+[scheduler] usable memory 987 MB (available 1243 MB - headroom 256 MB)
+[scheduler]   smollm2-1.7b         ctx=4096   need  2813 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-1.7b         ctx=2048   need  2429 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-1.7b         ctx=1024   need  2237 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-1.7b         ctx=512    need  2141 MB  ~4521 ms  -> exceeds memory
+[scheduler]   smollm2-360m         ctx=4096   need   556 MB  ~956 ms  -> fits
+[engine] running smollm2-360m ctx=4096
+
+=== Bench summary (5 runs) ===
+  success:      5/5
+  wall p50/p95: 639 / 790 ms
+  peak RSS max: 555 MB (child process, wait4)
+  csv:          state/compare-20261105-180326/nanoclaw.csv
+
+[compare] baseline success: 0/5
+[compare] nanoclaw success: 5/5
+[compare] raw data in state/compare-20261105-180326/

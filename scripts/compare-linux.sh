@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Same prompt, same device, same memory cap: fixed llama.cpp vs NanoClaw-Next.
 #
-# STATUS: written against llama.cpp's CLI and systemd-run; not yet executed on
-# real hardware (docs/PLAN.md M2). Expect to adjust flags for your llama.cpp build.
+# STATUS: exercised on an Ubuntu ARM64 VM, 2026-11-05; physical Pi tests pending.
+# See docs/benchmarks/2026-11-05-linux-vm/REPORT.md for results, matching backend
+# flags, and the controlled experiment that adds end-to-end timing and RSS.
 #
 # Usage:
 #   scripts/compare-linux.sh MEM_CAP BIG_MODEL.gguf PROMPT [RUNS]

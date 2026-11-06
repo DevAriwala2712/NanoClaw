@@ -1,0 +1,12 @@
+[engine] running smollm2-1.7b ctx=512
+[engine] running smollm2-1.7b ctx=4096
+[engine] running smollm2-360m ctx=512
+[engine] running smollm2-360m ctx=4096
+
+=== Calibration (./state/calibration.tsv) ===
+  model                   ctx   estimate(MB) measured(MB)     tok/s
+  smollm2-1.7b            512           2237         2141      55.5
+  smollm2-1.7b           4096           2909         2813      74.9
+  smollm2-360m            512            664          416     205.9
+  smollm2-360m           4096            804          556     210.0
+  Estimates above are from before this run; `probe` shows the updated ones.

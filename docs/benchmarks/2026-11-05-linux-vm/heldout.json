@@ -1,0 +1,18 @@
+[
+  {
+    "model": "smollm2-1.7b",
+    "ctx": 2048,
+    "exit": 0,
+    "predicted_bytes": 2548023296,
+    "measured_bytes": 2546601984,
+    "error_pct": 0.056
+  },
+  {
+    "model": "smollm2-360m",
+    "ctx": 2048,
+    "exit": 0,
+    "predicted_bytes": 499585024,
+    "measured_bytes": 498647040,
+    "error_pct": 0.188
+  }
+]
