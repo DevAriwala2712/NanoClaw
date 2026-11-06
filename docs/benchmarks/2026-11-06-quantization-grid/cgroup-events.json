@@ -1,0 +1,1136 @@
+{
+  "smollm2-1.7b-q4_k_m/ctx-1024-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 2360025088
+  },
+  "smollm2-1.7b-q4_k_m/ctx-1024-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 2360164352
+  },
+  "smollm2-1.7b-q4_k_m/ctx-1024-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 2360270848
+  },
+  "smollm2-1.7b-q4_k_m/ctx-2048-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 2561904640
+  },
+  "smollm2-1.7b-q4_k_m/ctx-2048-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 2561650688
+  },
+  "smollm2-1.7b-q4_k_m/ctx-2048-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 2561929216
+  },
+  "smollm2-1.7b-q4_k_m/ctx-8192-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 3772534784
+  },
+  "smollm2-1.7b-q4_k_m/ctx-8192-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 3772710912
+  },
+  "smollm2-1.7b-q4_k_m/ctx-8192-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 3772760064
+  },
+  "smollm2-1.7b-q5_k_m/ctx-1024-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 2701131776
+  },
+  "smollm2-1.7b-q5_k_m/ctx-1024-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 2701094912
+  },
+  "smollm2-1.7b-q5_k_m/ctx-1024-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 2700931072
+  },
+  "smollm2-1.7b-q5_k_m/ctx-2048-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 2902601728
+  },
+  "smollm2-1.7b-q5_k_m/ctx-2048-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 2902667264
+  },
+  "smollm2-1.7b-q5_k_m/ctx-2048-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 2902761472
+  },
+  "smollm2-1.7b-q5_k_m/ctx-8192-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 4113428480
+  },
+  "smollm2-1.7b-q5_k_m/ctx-8192-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 4113571840
+  },
+  "smollm2-1.7b-q5_k_m/ctx-8192-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 4113506304
+  },
+  "smollm2-1.7b-q8_0/ctx-1024-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 3894525952
+  },
+  "smollm2-1.7b-q8_0/ctx-1024-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 3894657024
+  },
+  "smollm2-1.7b-q8_0/ctx-1024-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 3894636544
+  },
+  "smollm2-1.7b-q8_0/ctx-2048-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 4096151552
+  },
+  "smollm2-1.7b-q8_0/ctx-2048-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 4096196608
+  },
+  "smollm2-1.7b-q8_0/ctx-2048-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 4096086016
+  },
+  "smollm2-1.7b-q8_0/ctx-8192-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 5306802176
+  },
+  "smollm2-1.7b-q8_0/ctx-8192-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 5306867712
+  },
+  "smollm2-1.7b-q8_0/ctx-8192-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 5307195392
+  },
+  "smollm2-360m-q4_k_m/ctx-1024-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 465760256
+  },
+  "smollm2-360m-q4_k_m/ctx-1024-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 465895424
+  },
+  "smollm2-360m-q4_k_m/ctx-1024-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 465788928
+  },
+  "smollm2-360m-q4_k_m/ctx-2048-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 508252160
+  },
+  "smollm2-360m-q4_k_m/ctx-2048-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 508260352
+  },
+  "smollm2-360m-q4_k_m/ctx-2048-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 507920384
+  },
+  "smollm2-360m-q4_k_m/ctx-8192-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 759967744
+  },
+  "smollm2-360m-q4_k_m/ctx-8192-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 760037376
+  },
+  "smollm2-360m-q4_k_m/ctx-8192-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 760197120
+  },
+  "smollm2-360m-q5_k_m/ctx-1024-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 490303488
+  },
+  "smollm2-360m-q5_k_m/ctx-1024-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 490258432
+  },
+  "smollm2-360m-q5_k_m/ctx-1024-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 490393600
+  },
+  "smollm2-360m-q5_k_m/ctx-2048-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 532484096
+  },
+  "smollm2-360m-q5_k_m/ctx-2048-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 532393984
+  },
+  "smollm2-360m-q5_k_m/ctx-2048-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 532561920
+  },
+  "smollm2-360m-q5_k_m/ctx-8192-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 784625664
+  },
+  "smollm2-360m-q5_k_m/ctx-8192-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 784465920
+  },
+  "smollm2-360m-q5_k_m/ctx-8192-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 784613376
+  },
+  "smollm2-360m-q8_0/ctx-1024-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 857272320
+  },
+  "smollm2-360m-q8_0/ctx-1024-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 857108480
+  },
+  "smollm2-360m-q8_0/ctx-1024-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 857509888
+  },
+  "smollm2-360m-q8_0/ctx-2048-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 899649536
+  },
+  "smollm2-360m-q8_0/ctx-2048-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 899829760
+  },
+  "smollm2-360m-q8_0/ctx-2048-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 899702784
+  },
+  "smollm2-360m-q8_0/ctx-8192-run-1": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 1151545344
+  },
+  "smollm2-360m-q8_0/ctx-8192-run-2": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 1151746048
+  },
+  "smollm2-360m-q8_0/ctx-8192-run-3": {
+    "events-before": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "events-after": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory.max": 6442450944,
+    "memory.swap.max": 0,
+    "memory.peak": 1151602688
+  }
+}

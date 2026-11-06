@@ -1,0 +1,89 @@
+smollm2-1.7b-q4_k_m
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-1.7b-q4_k_m  ctx=1024   need  2237 MB  ~3043 ms  -> fits
+[plan] run smollm2-1.7b-q4_k_m at ctx 1024 (est. 2237 MB)
+
+smollm2-1.7b-q4_k_m
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-1.7b-q4_k_m  ctx=2048   need  2429 MB  ~3043 ms  -> fits
+[plan] run smollm2-1.7b-q4_k_m at ctx 2048 (est. 2429 MB)
+
+smollm2-1.7b-q4_k_m
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-1.7b-q4_k_m  ctx=8192   need  3581 MB  ~3043 ms  -> fits
+[plan] run smollm2-1.7b-q4_k_m at ctx 8192 (est. 3581 MB)
+
+smollm2-1.7b-q5_k_m
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-1.7b-q5_k_m  ctx=1024   need  2560 MB  ~2638 ms  -> fits
+[plan] run smollm2-1.7b-q5_k_m at ctx 1024 (est. 2560 MB)
+
+smollm2-1.7b-q5_k_m
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-1.7b-q5_k_m  ctx=2048   need  2752 MB  ~2638 ms  -> fits
+[plan] run smollm2-1.7b-q5_k_m at ctx 2048 (est. 2752 MB)
+
+smollm2-1.7b-q5_k_m
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-1.7b-q5_k_m  ctx=8192   need  3904 MB  ~2638 ms  -> fits
+[plan] run smollm2-1.7b-q5_k_m at ctx 8192 (est. 3904 MB)
+
+smollm2-1.7b-q8_0
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-1.7b-q8_0    ctx=1024   need  3695 MB  ~3125 ms  -> fits
+[plan] run smollm2-1.7b-q8_0 at ctx 1024 (est. 3695 MB)
+
+smollm2-1.7b-q8_0
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-1.7b-q8_0    ctx=2048   need  3887 MB  ~3125 ms  -> fits
+[plan] run smollm2-1.7b-q8_0 at ctx 2048 (est. 3887 MB)
+
+smollm2-1.7b-q8_0
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-1.7b-q8_0    ctx=8192   need  5039 MB  ~3125 ms  -> fits
+[plan] run smollm2-1.7b-q8_0 at ctx 8192 (est. 5039 MB)
+
+smollm2-360m-q4_k_m
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-360m-q4_k_m  ctx=1024   need   435 MB  ~587 ms  -> fits
+[plan] run smollm2-360m-q4_k_m at ctx 1024 (est. 435 MB)
+
+smollm2-360m-q4_k_m
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-360m-q4_k_m  ctx=2048   need   475 MB  ~587 ms  -> fits
+[plan] run smollm2-360m-q4_k_m at ctx 2048 (est. 475 MB)
+
+smollm2-360m-q4_k_m
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-360m-q4_k_m  ctx=8192   need   715 MB  ~587 ms  -> fits
+[plan] run smollm2-360m-q4_k_m at ctx 8192 (est. 715 MB)
+
+smollm2-360m-q5_k_m
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-360m-q5_k_m  ctx=1024   need   458 MB  ~726 ms  -> fits
+[plan] run smollm2-360m-q5_k_m at ctx 1024 (est. 458 MB)
+
+smollm2-360m-q5_k_m
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-360m-q5_k_m  ctx=2048   need   498 MB  ~726 ms  -> fits
+[plan] run smollm2-360m-q5_k_m at ctx 2048 (est. 498 MB)
+
+smollm2-360m-q5_k_m
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-360m-q5_k_m  ctx=8192   need   738 MB  ~726 ms  -> fits
+[plan] run smollm2-360m-q5_k_m at ctx 8192 (est. 738 MB)
+
+smollm2-360m-q8_0
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-360m-q8_0    ctx=1024   need   807 MB  ~732 ms  -> fits
+[plan] run smollm2-360m-q8_0 at ctx 1024 (est. 807 MB)
+
+smollm2-360m-q8_0
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-360m-q8_0    ctx=2048   need   847 MB  ~732 ms  -> fits
+[plan] run smollm2-360m-q8_0 at ctx 2048 (est. 847 MB)
+
+smollm2-360m-q8_0
+[scheduler] usable memory 7936 MB (available 8192 MB - headroom 256 MB)
+[scheduler]   smollm2-360m-q8_0    ctx=8192   need  1087 MB  ~732 ms  -> fits
+[plan] run smollm2-360m-q8_0 at ctx 8192 (est. 1087 MB)

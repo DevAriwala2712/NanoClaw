@@ -25,7 +25,7 @@ $ nanoclaw-next plan --available-mb 1800
 | llama.cpp backend via command template; per-run peak RSS from `wait4` | ✅ | Real SmolLM2 1.7B / 360M on llama.cpp 0.7.0; `wait4` RSS matches `/usr/bin/time -l` within 1 MB |
 | Timeout → exclude rung and retry | ✅ | Real: a 1.7B run killed at a 1.5 s deadline fell back to the 360M |
 | OOM kill → exclude rung and retry | ✅ | Real llama.cpp cgroup OOM recovery on Linux VM with a deliberately overstated memory budget; supervisor kept alive by `OOMPolicy=continue` |
-| Calibration: measured RSS, tokens/s and startup time feed back into estimates | ✅ | Held-out context predicted to within 2 MB (see below) |
+| Calibration: measured RSS, tokens/s and startup time feed back into estimates | ✅ | 54 held-out Linux VM runs across two model sizes and Q4/Q5/Q8: max RSS error 0.0583%; [grid report](docs/benchmarks/2026-11-06-quantization-grid/REPORT.md) |
 | Tool execution: executable allowlist + hard SIGKILL timeout | ✅ | Unit tests: `/usr/bin/curl`, `bash -c`, `python3 -c` denied; hung command killed in under 2 s |
 | Kernel isolation (Landlock / seccomp) | ❌ planned (M3) | Allowlisted tools run with your full user permissions |
 | Cloud backend | ❌ planned (M4) | The scheduler supports it; no backend ships, so it is never chosen |
@@ -72,6 +72,17 @@ Ubuntu 24.04 ARM64, 4 virtual CPUs / 4 GiB RAM on Apple Silicon; CPU-only llama.
 | Scheduler → SmolLM2 360M @ 4096 | 5/5 | 810 / 911 ms | 555.5 MiB | 0 |
 
 End-to-end time includes scope creation, scheduling and model loading. Completion is not a quality score; the smaller model has a quality tradeoff. A separate forced-overestimate check recovered from a real OOM on attempt two. Q4 memory estimates at held-out context 2048 were within 0.2% for both models. These are preliminary **VM** results, not Pi performance or completion of M2. See the [method, raw data and limitations](docs/benchmarks/2026-11-05-linux-vm/REPORT.md).
+
+## Quantization/context grid (2026-11-06)
+
+On the same Ubuntu ARM64 VM, temporarily enlarged to 8 GiB, both model sizes were calibrated independently at contexts 512/4096. Each quantization then ran three times at held-out contexts 1024/2048/8192 under a 6 GiB cgroup cap. All **54/54** runs completed without OOM kills; every prediction matched NanoClaw's production `plan` formula.
+
+| Model | Q4_K_M worst RSS error | Q5_K_M worst RSS error | Q8_0 worst RSS error |
+|---|---:|---:|---:|
+| 1.7B | 0.0157% | 0.0105% | 0.0107% |
+| 360M | 0.0583% | 0.0540% | 0.0327% |
+
+This meets the <10% target **for this VM, backend and short-prompt grid**; calibration is device-specific. It does not establish Pi performance or arbitrary-prompt accuracy. [Method, RSS ranges and raw measurements](docs/benchmarks/2026-11-06-quantization-grid/REPORT.md).
 
 ## Build facts
 

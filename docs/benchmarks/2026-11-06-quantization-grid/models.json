@@ -1,0 +1,74 @@
+[
+  {
+    "name": "smollm2-1.7b-q4_k_m",
+    "family": "1.7b",
+    "quant": "Q4_K_M",
+    "filename": "SmolLM2-1.7B-Instruct-Q4_K_M.gguf",
+    "size_bytes": 1055609824,
+    "sha256": "77665ea4815999596525c636fbeb56ba8b080b46ae85efef4f0d986a139834d7",
+    "repo": "bartowski/SmolLM2-1.7B-Instruct-GGUF",
+    "revision": "1f03464768bfcc0319fc50da8ff5fb20b6417ba2",
+    "url": "https://huggingface.co/bartowski/SmolLM2-1.7B-Instruct-GGUF/resolve/1f03464768bfcc0319fc50da8ff5fb20b6417ba2/SmolLM2-1.7B-Instruct-Q4_K_M.gguf",
+    "kv_bytes_per_token": 196608
+  },
+  {
+    "name": "smollm2-1.7b-q5_k_m",
+    "family": "1.7b",
+    "quant": "Q5_K_M",
+    "filename": "SmolLM2-1.7B-Instruct-Q5_K_M.gguf",
+    "size_bytes": 1225479136,
+    "sha256": "401022fb56129a2906165e92afd816c70fa91063aecf490701f097c0fb0264e0",
+    "repo": "bartowski/SmolLM2-1.7B-Instruct-GGUF",
+    "revision": "1f03464768bfcc0319fc50da8ff5fb20b6417ba2",
+    "url": "https://huggingface.co/bartowski/SmolLM2-1.7B-Instruct-GGUF/resolve/1f03464768bfcc0319fc50da8ff5fb20b6417ba2/SmolLM2-1.7B-Instruct-Q5_K_M.gguf",
+    "kv_bytes_per_token": 196608
+  },
+  {
+    "name": "smollm2-1.7b-q8_0",
+    "family": "1.7b",
+    "quant": "Q8_0",
+    "filename": "SmolLM2-1.7B-Instruct-Q8_0.gguf",
+    "size_bytes": 1820414944,
+    "sha256": "0c6e8955788b1253f418c354a4bdc4cf507b8cfe49c48bb10c7c58ae713cfa2a",
+    "repo": "bartowski/SmolLM2-1.7B-Instruct-GGUF",
+    "revision": "1f03464768bfcc0319fc50da8ff5fb20b6417ba2",
+    "url": "https://huggingface.co/bartowski/SmolLM2-1.7B-Instruct-GGUF/resolve/1f03464768bfcc0319fc50da8ff5fb20b6417ba2/SmolLM2-1.7B-Instruct-Q8_0.gguf",
+    "kv_bytes_per_token": 196608
+  },
+  {
+    "name": "smollm2-360m-q4_k_m",
+    "family": "360m",
+    "quant": "Q4_K_M",
+    "filename": "SmolLM2-360M-Instruct-Q4_K_M.gguf",
+    "size_bytes": 270590880,
+    "sha256": "2fa3f013dcdd7b99f9b237717fa0b12d75bbb89984cc1274be1471a465bac9c2",
+    "repo": "bartowski/SmolLM2-360M-Instruct-GGUF",
+    "revision": "7be6f65f1db715fe5dc5a4634c0d459b4eed42ec",
+    "url": "https://huggingface.co/bartowski/SmolLM2-360M-Instruct-GGUF/resolve/7be6f65f1db715fe5dc5a4634c0d459b4eed42ec/SmolLM2-360M-Instruct-Q4_K_M.gguf",
+    "kv_bytes_per_token": 40960
+  },
+  {
+    "name": "smollm2-360m-q5_k_m",
+    "family": "360m",
+    "quant": "Q5_K_M",
+    "filename": "SmolLM2-360M-Instruct-Q5_K_M.gguf",
+    "size_bytes": 289944480,
+    "sha256": "5fa72b081370dbfc015f0be3fe71aa2ae78b620fd5c1d1f484fb976bab7dae73",
+    "repo": "bartowski/SmolLM2-360M-Instruct-GGUF",
+    "revision": "7be6f65f1db715fe5dc5a4634c0d459b4eed42ec",
+    "url": "https://huggingface.co/bartowski/SmolLM2-360M-Instruct-GGUF/resolve/7be6f65f1db715fe5dc5a4634c0d459b4eed42ec/SmolLM2-360M-Instruct-Q5_K_M.gguf",
+    "kv_bytes_per_token": 40960
+  },
+  {
+    "name": "smollm2-360m-q8_0",
+    "family": "360m",
+    "quant": "Q8_0",
+    "filename": "SmolLM2-360M-Instruct-Q8_0.gguf",
+    "size_bytes": 386405280,
+    "sha256": "c004ac34cce45e03e4452bca472535bc371fcb0d07ae560bba2c57ce4a284b7b",
+    "repo": "bartowski/SmolLM2-360M-Instruct-GGUF",
+    "revision": "7be6f65f1db715fe5dc5a4634c0d459b4eed42ec",
+    "url": "https://huggingface.co/bartowski/SmolLM2-360M-Instruct-GGUF/resolve/7be6f65f1db715fe5dc5a4634c0d459b4eed42ec/SmolLM2-360M-Instruct-Q8_0.gguf",
+    "kv_bytes_per_token": 40960
+  }
+]

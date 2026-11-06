@@ -50,9 +50,11 @@ What we are **not** building: another agent harness competing on binary size (Nu
 - llama.cpp's `--fit` handles single-model memory fitting. Position NanoClaw-Next above it.
 
 ### M2: Evidence on real hardware _(needs a Pi 5 4 GB and a Linux box)_
-**M2 status (2026-11-05): in progress.** First Linux evidence collected in a 4 GiB Ubuntu ARM64 VM on Apple Silicon. Under a real 1.5 GiB cgroup cap, fixed 1.7B @ 4096 failed 5/5 with OOM kills; the scheduler selected 360M @ 4096 and completed 5/5 (end-to-end p50/p95 810/911 ms). A separate fault-injection run recovered from a real OOM on attempt two. Linux tests passed 32/32, selftest 10/10. Q4 held-out context-2048 memory errors were under 0.2%. [Report and raw evidence](benchmarks/2026-11-05-linux-vm/REPORT.md).
+**M2 status (2026-11-06): in progress.** First Linux evidence collected in a 4 GiB Ubuntu ARM64 VM on Apple Silicon. Under a real 1.5 GiB cgroup cap, fixed 1.7B @ 4096 failed 5/5 with OOM kills; the scheduler selected 360M @ 4096 and completed 5/5 (end-to-end p50/p95 810/911 ms). A separate fault-injection run recovered from a real OOM on attempt two. Linux tests passed 32/32, selftest 10/10. [Cap comparison and raw evidence](benchmarks/2026-11-05-linux-vm/REPORT.md).
 
-Still outstanding: physical Pi measurements, the full quantization/context grid, and the pressure experiment. PSI is currently read but is not a scheduler input; pre-emptive switching during inference needs implementation before item 3 can pass. VM results do not close the hardware milestone.
+The VM calibration grid is now measured for both 1.7B and 360M at Q4_K_M, Q5_K_M and Q8_0: calibration at 512/4096, then three repetitions at held-out 1024/2048/8192 contexts, 54/54 completed with no OOM kills and maximum absolute RSS error 0.0583% (target <10%). The VM was temporarily enlarged to 8 GiB, with a 6 GiB cap per command, for this accuracy experiment. [Grid report, method and data](benchmarks/2026-11-06-quantization-grid/REPORT.md).
+
+Still outstanding: physical Pi validation, the PSI-pressure policy/experiment, and broader prompt/quality coverage. PSI is currently read but is not a scheduler input; pre-emptive switching during inference needs implementation before item 3 can pass. VM results do not close the hardware milestone.
 
 1. Run `scripts/compare-linux.sh`: a cgroup-capped (`MemoryMax=1.5G`) comparison of fixed llama.cpp at default context vs the NanoClaw-Next scheduler on the same prompts. Report the success rate, p50/p95 latency and peak RSS.
 2. Calibrate estimate error: predicted vs measured peak RSS across Q4_K_M, Q5_K_M and Q8_0 at 512–8k context. Target error under 10%.

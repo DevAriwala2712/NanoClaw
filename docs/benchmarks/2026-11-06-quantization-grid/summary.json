@@ -1,0 +1,50 @@
+[
+  {
+    "model": "smollm2-1.7b-q4_k_m",
+    "samples": 9,
+    "max_absolute_error_pct": 0.0157,
+    "mean_absolute_error_pct": 0.0077,
+    "all_under_10pct": true,
+    "oom_kills": 0
+  },
+  {
+    "model": "smollm2-1.7b-q5_k_m",
+    "samples": 9,
+    "max_absolute_error_pct": 0.0105,
+    "mean_absolute_error_pct": 0.0057,
+    "all_under_10pct": true,
+    "oom_kills": 0
+  },
+  {
+    "model": "smollm2-1.7b-q8_0",
+    "samples": 9,
+    "max_absolute_error_pct": 0.0107,
+    "mean_absolute_error_pct": 0.0065,
+    "all_under_10pct": true,
+    "oom_kills": 0
+  },
+  {
+    "model": "smollm2-360m-q4_k_m",
+    "samples": 9,
+    "max_absolute_error_pct": 0.0583,
+    "mean_absolute_error_pct": 0.0195,
+    "all_under_10pct": true,
+    "oom_kills": 0
+  },
+  {
+    "model": "smollm2-360m-q5_k_m",
+    "samples": 9,
+    "max_absolute_error_pct": 0.054,
+    "mean_absolute_error_pct": 0.0215,
+    "all_under_10pct": true,
+    "oom_kills": 0
+  },
+  {
+    "model": "smollm2-360m-q8_0",
+    "samples": 9,
+    "max_absolute_error_pct": 0.0327,
+    "mean_absolute_error_pct": 0.0169,
+    "all_under_10pct": true,
+    "oom_kills": 0
+  }
+]

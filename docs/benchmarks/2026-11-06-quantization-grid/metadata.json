@@ -1,0 +1,28 @@
+{
+  "started_utc": "2026-11-06T03:48:11Z",
+  "platform": "Linux-6.8.0-147-generic-aarch64-with-glibc2.39",
+  "vcpus": 4,
+  "vm_ram_gib": 8,
+  "per_run_cap_bytes": 6442450944,
+  "cache_policy": "sync + drop_caches=3 inside VM before calibration and each held-out run",
+  "calibration_contexts": [
+    512,
+    4096
+  ],
+  "heldout_contexts": [
+    1024,
+    2048,
+    8192
+  ],
+  "repetitions": 3,
+  "max_new_tokens": 64,
+  "prompt": "Explain what swap memory is in two sentences.",
+  "source_commit": "7d5643b",
+  "zig": "0.15.2",
+  "llama_release": "b11669",
+  "order": "model, then held-out context, then repeat; all sequential",
+  "host_cpu": "Apple M3 Pro",
+  "host_ram_bytes": 19327352832,
+  "multipass_version": "1.16.4+mac",
+  "multipass_driver": "qemu"
+}
