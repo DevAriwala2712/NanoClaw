@@ -98,3 +98,12 @@ Document a source commit, supported backend/configuration, experiment evidence a
 | Per-request process spawn is slow | M4 persistent engine; benchmarks report load time separately |
 | Name collision with NanoClaw | Decide on a rename (EdgeMorph / NanoEdge Runtime) after checking availability |
 | Zig 0.15.2 `zig build` fails on macOS 27 (linker can't read the new SDK) | Documented workaround: `zig build-exe … -target aarch64-macos.15.0`; CI on Linux |
+
+### M3 preparation update (2026-11-06)
+
+Implemented request-level retry evidence and shared deadlines, plus an offline
+60-case suite and strict response scorer. See [evaluation guide](../evaluation/README.md).
+These are implementation artifacts, not measured quality results. Scoring remains
+provisional until run ingestion binds treatment identities and tokenizer counts
+to a verified experiment manifest; Linux cgroup collection and inference runs
+remain separately authorized experiment work.

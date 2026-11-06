@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NanoClaw pilot case v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "family",
+    "scenario_group",
+    "split",
+    "prompt",
+    "evidence",
+    "permitted_decisions",
+    "expects_refusal",
+    "expected"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string"
+    },
+    "family": {
+      "enum": [
+        "extraction",
+        "diagnosis",
+        "uncertainty"
+      ]
+    },
+    "scenario_group": {
+      "type": "string"
+    },
+    "split": {
+      "enum": [
+        "development",
+        "heldout"
+      ]
+    },
+    "prompt": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "permitted_decisions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "expects_refusal": {
+      "type": "boolean"
+    },
+    "expected": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "decision",
+          "fields",
+          "evidence"
+        ],
+        "properties": {
+          "decision": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "object"
+          },
+          "evidence": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

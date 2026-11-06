@@ -254,3 +254,7 @@ For each model (best quality first, or smallest first with `--prefer speed`), th
 [Plan](docs/PLAN.md) · [Research synthesis](docs/RESEARCH_SYNTHESIS.md) · [Linux VM report](docs/benchmarks/2026-11-05-linux-vm/REPORT.md) · [Quantization grid report](docs/benchmarks/2026-11-06-quantization-grid/REPORT.md) · [Zig requirement](docs/ZIG_VERSION_REQUIREMENT.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
 <sub>Not claimed yet: Raspberry Pi 5 results, pre-emptive step-down under memory pressure, kernel-level tool isolation, a cloud backend, task-quality results, superiority over tuned llama-server, Ollama or llama-swap, or accuracy beyond the short-prompt VM grid.</sub>
+
+### Quality pilot preparation
+
+The [offline evaluation suite](evaluation/README.md) provides 60 labeled cases, strict scoring and experiment manifest preparation. No task-quality results are claimed yet. `bench --freeze-calibration` now preserves request-level retry evidence in a JSONL sidecar; see the suite documentation for CSV schema changes.

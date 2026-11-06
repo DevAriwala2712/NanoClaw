@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "split": "development",
+  "contexts": [
+    512,
+    1024,
+    2048,
+    4096
+  ],
+  "output_tokens": 128,
+  "caps_mib": [
+    1536,
+    2048,
+    3072
+  ],
+  "policies": [
+    "fixed_large",
+    "fixed_small",
+    "tuned_large",
+    "adaptive_input_gate"
+  ],
+  "calibration_frozen": true,
+  "process_lifetime": "cold",
+  "swap_enabled": false,
+  "repetitions": null,
+  "hardware": null,
+  "backend_build": null,
+  "source_commit": null,
+  "sampling": null,
+  "threads": null,
+  "cache_procedure": null,
+  "ordering": null,
+  "authorization": null,
+  "cases_sha256": null,
+  "models": [
+    {
+      "id": "smollm2-1.7b-q4",
+      "sha256": null,
+      "tokenizer_id": null,
+      "template_sha256": null,
+      "calibration_sha256": null,
+      "backend_arguments": null
+    },
+    {
+      "id": "smollm2-360m-q4",
+      "sha256": null,
+      "tokenizer_id": null,
+      "template_sha256": null,
+      "calibration_sha256": null,
+      "backend_arguments": null
+    }
+  ],
+  "rendered_prompts": [],
+  "tuned_context_by_cap": {},
+  "development_results_sha256": null
+}
