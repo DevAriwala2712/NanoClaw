@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img"><title>Decision grid of models by context length: red cells exceed memory, outlined cells fit, the green cell is the best choice</title>
+<style>.ink{fill:#1f2328}.ink-s{stroke:#1f2328;fill:none}.fit{fill:#008300}.over{fill:#e34948}.over-s{stroke:#e34948;fill:none}@media (prefers-color-scheme: dark){.ink{fill:#e6edf3}.ink-s{stroke:#e6edf3;fill:none}.fit{fill:#3fb950}.over{fill:#f26a69}.over-s{stroke:#f26a69;fill:none}}</style>
+<rect class="over" x="11.0" y="25.0" width="22" height="22" rx="4"/>
+<rect class="over" x="39.0" y="25.0" width="22" height="22" rx="4"/>
+<rect class="fit" x="67.0" y="25.0" width="22" height="22" rx="4"/>
+<rect class="ink-s" x="97.0" y="27.0" width="18" height="18" rx="3" stroke-width="4"/>
+<rect class="over" x="11.0" y="53.0" width="22" height="22" rx="4"/>
+<rect class="ink-s" x="41.0" y="55.0" width="18" height="18" rx="3" stroke-width="4"/>
+<rect class="ink-s" x="69.0" y="55.0" width="18" height="18" rx="3" stroke-width="4"/>
+<rect class="ink-s" x="97.0" y="55.0" width="18" height="18" rx="3" stroke-width="4"/>
+<rect class="ink-s" x="13.0" y="83.0" width="18" height="18" rx="3" stroke-width="4"/>
+<rect class="ink-s" x="41.0" y="83.0" width="18" height="18" rx="3" stroke-width="4"/>
+<rect class="ink-s" x="69.0" y="83.0" width="18" height="18" rx="3" stroke-width="4"/>
+<rect class="ink-s" x="97.0" y="83.0" width="18" height="18" rx="3" stroke-width="4"/>
+</svg>
