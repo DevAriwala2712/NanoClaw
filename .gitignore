@@ -5,3 +5,9 @@ zig-out/
 state/
 nanoclaw-next.conf
 models/
+Thumbs.db
+*.swp
+*~
+__pycache__/
+*.pyc
+.vscode/
