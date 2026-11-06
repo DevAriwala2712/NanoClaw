@@ -2,6 +2,8 @@
 
 _Date: 2026-10-26 · Method: desk research + code audit · Status: hypotheses, not validated with users_
 
+**Reading note (2026-11-06):** this is a historical research snapshot, not the current product plan. [NanoClaw-Next remains the research project; TUMe owns maintenance-product development](PROJECT_SPLIT.md). Early statements below about all competitors using static knobs or failing hard are too broad: [Ollama manages memory, queues and idle-model unloading](https://docs.ollama.com/faq#how-does-ollama-handle-concurrent-requests), and [llama-server supports routing and memory-based unloading](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md#memory-based-unloading). Its documented CPU-memory limitation is a narrower research opportunity, not evidence of a universal competitive advantage. Current priorities and quality requirements are in [PLAN.md](PLAN.md) and [QUALITY_EVALUATION.md](QUALITY_EVALUATION.md).
+
 ## Research overview
 
 **Question.** Where do people running LLMs on small devices (Raspberry Pi 5, Jetson, old laptops, mini-PCs) get stuck, and which of those problems is NanoClaw-Next positioned to solve better than existing tools?
