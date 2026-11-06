@@ -1,6 +1,22 @@
-# NanoClaw-Next
+<h1 align="center"><img src="docs/assets/nanoclaw-mark.svg" alt="" height="40" align="absmiddle"> NanoClaw-Next</h1>
 
-**A research project on memory-efficient local LLM execution that preserves useful model behavior.**
+<p align="center"><b>A research project on memory-efficient local LLM execution that preserves useful model behavior.</b><br>
+Picks the best model × context that fits the memory free right now, and steps down a rung instead of crashing.</p>
+
+<!-- badges:start -->
+<p align="center">
+  <a href="docs/benchmarks/2026-11-05-linux-vm/REPORT.md"><img alt="1.5 GiB cap, 5 runs: scheduler 5/5, fixed 0/5" src="https://img.shields.io/badge/1.5%20GiB%20cap%2C%205%20runs-scheduler%205%2F5%2C%20fixed%200%2F5-brightgreen"></a>
+  <a href="docs/benchmarks/2026-11-06-quantization-grid/summary.json"><img alt="RSS error, held out: max 0.0583%" src="https://img.shields.io/badge/RSS%20error%2C%20held%20out-max%200.0583%25-brightgreen"></a>
+  <a href="docs/benchmarks/2026-11-06-quantization-grid/REPORT.md"><img alt="calibration grid: 54 of 54 runs completed" src="https://img.shields.io/badge/calibration%20grid-54%20of%2054%20runs%20completed-brightgreen"></a>
+  <a href="docs/ZIG_VERSION_REQUIREMENT.md"><img alt="Zig: 0.15.2" src="https://img.shields.io/badge/Zig-0.15.2-blue"></a>
+  <a href="src/tests.zig"><img alt="Zig tests declared: 32" src="https://img.shields.io/badge/Zig%20tests%20declared-32-blue"></a>
+</p>
+<!-- badges:end -->
+
+<p align="center">
+  <img src="docs/assets/cap-comparison.png" alt="Bar charts: under a real 1.5 GiB cgroup cap a fixed 1.7B model completed 0 of 5 runs with 5 OOM kills, while the scheduler's 360M choice completed 5 of 5; peak RSS 1533.5 MiB versus 555.5 MiB" width="860"><br>
+  <sub>Real 1.5 GiB cgroup cap on an Ubuntu ARM64 VM, five runs per strategy. A VM result, not a Pi result; completion is not a quality score. <a href="#results">More results ↓</a></sub>
+</p>
 
 The product effort now lives in **[TUMe](https://github.com/DevAriwala2712/TUMe)**: a planned edge-device maintenance supervisor for health monitoring, diagnosis and bounded recovery. NanoClaw-Next remains the experimental home for memory estimation, scheduling, inference policies and reproducible evaluations. See the [project split](docs/PROJECT_SPLIT.md), [research plan](docs/PLAN.md), and [quality-evaluation protocol](docs/QUALITY_EVALUATION.md).
 
@@ -19,7 +35,19 @@ $ nanoclaw-next plan --available-mb 1800
 
 > **Why:** shared edge devices have changing RAM availability. Existing servers already provide fitting, loading and unloading mechanisms; our research examines CPU/container budgets, model/context choices, recovery and the resulting quality tradeoffs. We have not established superiority over tuned llama-server, Ollama or llama-swap. See [docs/RESEARCH_SYNTHESIS.md](docs/RESEARCH_SYNTHESIS.md).
 
-## Status: what works and how it was checked
+## Status
+
+```
+M1  honest foundation          ██████████  done          scheduler, estimator, backend, sandbox allowlist, CLI
+M2  evidence on real hardware  ████████░░  3/4 items     VM only · pressure (PSI) experiment not run · physical Pi pending
+M3  quality evaluation         ░░░░░░░░░░  planned       labeled tasks; quality floors before comparing policies
+M4  persistent engine          ░░░░░░░░░░  planned       memory-policy research, optional cloud backend
+M5  transfer into TUMe         ░░░░░░░░░░  planned       after validated results
+```
+
+M2 items per [docs/PLAN.md](docs/PLAN.md): capped comparison ✅ (VM), estimate-error grid ✅ (VM), results table in this README ✅, PSI pressure experiment ⛔ not run.
+
+### What works and how it was checked
 
 | Capability | Status | Evidence |
 |---|---|---|
@@ -37,7 +65,7 @@ $ nanoclaw-next plan --available-mb 1800
 
 Experimental agent scaffolding (in-memory hierarchical memory, tool-name aliases) is kept but is not the focus. `src/skills/` and `src/memory.zig` are design stubs that aren't wired in.
 
-## Measured on real models
+### Measured on a Mac with real models
 
 MacBook (Apple Silicon, 18 GB, macOS 27), llama.cpp 0.7.0 (Homebrew), CPU only (`-ngl 0`, to mimic a Pi), SmolLM2-Instruct Q4_K_M from bartowski (SHA-256 checked). Peak RSS from `wait4` per run; raw data in `state/*.csv` after `calibrate` / `bench`.
 
@@ -66,7 +94,23 @@ MacBook (Apple Silicon, 18 GB, macOS 27), llama.cpp 0.7.0 (Homebrew), CPU only (
 
 **Quality, not just fit:** for "show how much disk space is free", the 1.7B produced `df`. The 360M produced `ls /dev/disk/by-id/` on one run and a commented multi-line script on another. `run` therefore prefers the best model for both steps; the small model is used only under memory or deadline pressure.
 
-## First Linux VM comparison (2026-11-05)
+<a id="results"></a>
+
+## Results
+
+### Fixed model vs scheduler under a memory cap
+
+<img src="docs/assets/cap-comparison.png" alt="Bar charts of runs completed and peak RSS for the fixed 1.7B model versus the scheduler under a 1.5 GiB cap" width="860">
+
+Under a real cap the fixed 1.7B run was OOM-killed every time, while the scheduler chose the 360M and finished every run. The smaller model has a quality tradeoff. The source data is [docs/benchmarks/2026-11-05-linux-vm/summary.json](docs/benchmarks/2026-11-05-linux-vm/summary.json).
+
+### Memory estimate accuracy
+
+<img src="docs/assets/estimate-error.png" alt="Dot plot on a log axis: maximum and mean absolute RSS prediction error for six model and quantization pairs, all between 0.005% and 0.06%, far left of the 10% target line" width="860">
+
+After calibration, predictions stayed within 0.06% of measured peak RSS at held-out contexts for all six model × quantization pairs. This holds for one VM, one backend and a short prompt; calibration is device-specific, and it says nothing about Pi performance. Source: [docs/benchmarks/2026-11-06-quantization-grid/summary.json](docs/benchmarks/2026-11-06-quantization-grid/summary.json). Regenerate with `python3 scripts/make_figures.py`.
+
+### First Linux VM comparison (2026-11-05)
 
 Ubuntu 24.04 ARM64, 4 virtual CPUs / 4 GiB RAM on Apple Silicon; CPU-only llama.cpp build 11669. Same prompt, context 4096, maximum 128 tokens, temperature 0, seed 1; five alternating runs per strategy. A fresh 1536 MiB cgroup cap with swap disabled applies to each run; the VM Linux page cache is cleared before each run.
 
@@ -77,7 +121,7 @@ Ubuntu 24.04 ARM64, 4 virtual CPUs / 4 GiB RAM on Apple Silicon; CPU-only llama.
 
 End-to-end time includes scope creation, scheduling and model loading. Completion is not a quality score; the smaller model has a quality tradeoff. A separate forced-overestimate check recovered from a real OOM on attempt two. Q4 memory estimates at held-out context 2048 were within 0.2% for both models. These are preliminary **VM** results, not Pi performance or completion of M2. See the [method, raw data and limitations](docs/benchmarks/2026-11-05-linux-vm/REPORT.md).
 
-## Quantization/context grid (2026-11-06)
+### Quantization/context grid (2026-11-06)
 
 On the same Ubuntu ARM64 VM, temporarily enlarged to 8 GiB, both model sizes were calibrated independently at contexts 512/4096. Each quantization then ran three times at held-out contexts 1024/2048/8192 under a 6 GiB cgroup cap. All **54/54** runs completed without OOM kills; every prediction matched NanoClaw's production `plan` formula.
 
@@ -131,7 +175,7 @@ Placeholders `{model}`, `{ctx}`, `{n}` and `{prompt_file}` are filled per run; t
 ./zig-out/bin/nanoclaw-next run --prompt "show disk usage"
 ```
 
-### Try it without models
+#### Try it without models
 
 ```bash
 python3 -I scripts/dev/make_test_models.py models   # sparse fake GGUFs (~36 KB on disk)
@@ -154,7 +198,7 @@ python3 -I scripts/dev/make_test_models.py models   # sparse fake GGUFs (~36 KB 
 | `run` / `prompt` | Agent cycle: plan → one command (both prefer quality) → allowlisted execution |
 | `selftest` | Checks that need no model, to run on the target device |
 
-## How decisions are made
+## How it works
 
 ```
 need(model, ctx) = GGUF file size                                   (weights, mmapped)
@@ -165,6 +209,29 @@ usable          = min(MemAvailable, cgroup memory.max − memory.current, memory
 ```
 
 For each model (best quality first, or smallest first with `--prefer speed`), the scheduler tries the requested context, halving it down to `min_ctx` until `need ≤ usable`. A model whose tokens/s can't meet `--deadline-ms` is skipped. Speed is measured where possible. Otherwise it's inferred from a measured model on the same device: decoding is memory-bandwidth bound, so tokens/s scales with 1/weight size. That way an unmeasured model is never assumed to be fast. Then come cloud (only if configured and not sensitive) and refusal. After each successful run, peak RSS, tokens/s and startup time are appended to `state/calibration.tsv`. If a run's RSS is far below the weight size (weights in GPU/Metal memory), its memory reading is ignored and only its speed is used.
+
+## Repository layout
+
+| Path | What's there |
+|---|---|
+| `src/edge/` | The core: `sysmem`, `gguf`, `estimate`, `scheduler`, `proc`, `engine` |
+| `src/runtime/` | Tool sandbox (allowlist + timeout), timeout budget, rollback journal |
+| `src/app.zig` | Commands: probe / plan / bench / run / selftest |
+| `src/skills/`, `src/memory*` | Experimental agent scaffolding; design stubs, not wired in |
+| `docs/` | [Research synthesis](docs/RESEARCH_SYNTHESIS.md), [plan](docs/PLAN.md), [Zig requirement](docs/ZIG_VERSION_REQUIREMENT.md) |
+| `docs/benchmarks/` | Raw data, drivers and reports for each M2 measurement |
+| `docs/assets/` | Logo mark and figures |
+| `docs/archive/` | Original design notes (aspirational; superseded by `docs/`) |
+| `scripts/` | `setup.sh`, `release-phase0.sh`, `compare-linux.sh`, `make_figures.py`, `update_badges.py`, dev fixtures |
+| `tests/` | `test_readme_badges.py`: fails when the README badges drift from the evidence |
+
+## Reproduce
+
+1. Build with Zig 0.15.2 and run the unit tests: `zig build test` (or the macOS 27 fallback below).
+2. Capped comparison on Linux: `scripts/compare-linux.sh`, or the controlled driver [run-linux-vm.py](docs/benchmarks/2026-11-05-linux-vm/run-linux-vm.py).
+3. Estimate-error grid: [run-grid.py](docs/benchmarks/2026-11-06-quantization-grid/run-grid.py) after [download-models.py](docs/benchmarks/2026-11-06-quantization-grid/download-models.py). Both expect the prepared VM layout described in the reports.
+4. Regenerate figures and badges: `python3 scripts/make_figures.py && python3 scripts/update_badges.py`.
+5. Check the badges haven't drifted: `python3 -m unittest tests.test_readme_badges`.
 
 ## Known issues
 
@@ -182,13 +249,8 @@ For each model (best quality first, or smallest first with `--prefer speed`), th
 
 "NanoClaw" collides with an established project of the same name. A rename (e.g. *EdgeMorph*, *NanoEdge Runtime*) is under consideration, pending an availability check.
 
-## Repository map
+## Docs
 
-```
-src/edge/        sysmem, gguf, estimate, scheduler, proc, engine (the core)
-src/runtime/     tool sandbox (allowlist + timeout), timeout budget, rollback journal
-src/app.zig      commands: probe / plan / bench / run / selftest
-docs/            research synthesis and plan
-scripts/         setup, release, Linux comparison, dev fixtures
-Resources/       original design notes (aspirational; superseded by docs/)
-```
+[Plan](docs/PLAN.md) · [Research synthesis](docs/RESEARCH_SYNTHESIS.md) · [Linux VM report](docs/benchmarks/2026-11-05-linux-vm/REPORT.md) · [Quantization grid report](docs/benchmarks/2026-11-06-quantization-grid/REPORT.md) · [Zig requirement](docs/ZIG_VERSION_REQUIREMENT.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
+
+<sub>Not claimed yet: Raspberry Pi 5 results, pre-emptive step-down under memory pressure, kernel-level tool isolation, a cloud backend, task-quality results, superiority over tuned llama-server, Ollama or llama-swap, or accuracy beyond the short-prompt VM grid.</sub>
