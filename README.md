@@ -1,6 +1,6 @@
 <h1 align="center"><img src="docs/assets/nanoclaw-mark.svg" alt="" height="40" align="absmiddle"> NanoClaw-Next</h1>
 
-<p align="center"><b>An adaptive scheduler for running local LLMs on memory-constrained devices.</b><br>
+<p align="center"><b>A research project on memory-efficient local LLM execution that preserves useful model behavior.</b><br>
 Picks the best model × context that fits the memory free right now, and steps down a rung instead of crashing.</p>
 
 <!-- badges:start -->
@@ -18,6 +18,10 @@ Picks the best model × context that fits the memory free right now, and steps d
   <sub>Real 1.5 GiB cgroup cap on an Ubuntu ARM64 VM, five runs per strategy. A VM result, not a Pi result; completion is not a quality score. <a href="#results">More results ↓</a></sub>
 </p>
 
+The product effort now lives in **[TUMe](https://github.com/DevAriwala2712/TUMe)**: a planned edge-device maintenance supervisor for health monitoring, diagnosis and bounded recovery. NanoClaw-Next remains the experimental home for memory estimation, scheduling, inference policies and reproducible evaluations. See the [project split](docs/PROJECT_SPLIT.md), [research plan](docs/PLAN.md), and [quality-evaluation protocol](docs/QUALITY_EVALUATION.md).
+
+**Research objective:** complete useful tasks correctly within a declared memory budget. Fewer OOM kills, a smaller binary or faster replies do not by themselves demonstrate preserved capability. Existing experiments validate memory estimates and request completion; broad task-quality evaluation is still pending.
+
 Given the memory actually free on the device right now, a context-length need and an optional deadline, NanoClaw-Next picks the best model × context that fits and runs it through llama.cpp. When a run gets OOM-killed, crashes or times out, it steps down a rung and retries instead of failing. Every decision prints the reason.
 
 ```
@@ -29,15 +33,16 @@ $ nanoclaw-next plan --available-mb 1800
 [plan] run smollm2-1.7b at ctx 1024 (est. 1376 MB)
 ```
 
-> **Why:** on a Pi 5 or Jetson, memory is the limit that bites. Today's tools (Ollama, llama-server, llama-swap) use static knobs and fail hard when memory runs out. NanoClaw-Next works one level above llama.cpp's own `--fit`: which model, deadlines, sensitivity, and recovery after failure. See [docs/RESEARCH_SYNTHESIS.md](docs/RESEARCH_SYNTHESIS.md) and [docs/PLAN.md](docs/PLAN.md).
+> **Why:** shared edge devices have changing RAM availability. Existing servers already provide fitting, loading and unloading mechanisms; our research examines CPU/container budgets, model/context choices, recovery and the resulting quality tradeoffs. We have not established superiority over tuned llama-server, Ollama or llama-swap. See [docs/RESEARCH_SYNTHESIS.md](docs/RESEARCH_SYNTHESIS.md).
 
 ## Status
 
 ```
 M1  honest foundation          ██████████  done          scheduler, estimator, backend, sandbox allowlist, CLI
 M2  evidence on real hardware  ████████░░  3/4 items     VM only · pressure (PSI) experiment not run · physical Pi pending
-M3  kernel isolation           ░░░░░░░░░░  not started   Landlock / seccomp
-M4  persistent engine          ░░░░░░░░░░  not started   plus optional cloud backend
+M3  quality evaluation         ░░░░░░░░░░  planned       labeled tasks; quality floors before comparing policies
+M4  persistent engine          ░░░░░░░░░░  planned       memory-policy research, optional cloud backend
+M5  transfer into TUMe         ░░░░░░░░░░  planned       after validated results
 ```
 
 M2 items per [docs/PLAN.md](docs/PLAN.md): capped comparison ✅ (VM), estimate-error grid ✅ (VM), results table in this README ✅, PSI pressure experiment ⛔ not run.
@@ -54,7 +59,7 @@ M2 items per [docs/PLAN.md](docs/PLAN.md): capped comparison ✅ (VM), estimate-
 | OOM kill → exclude rung and retry | ✅ | Real llama.cpp cgroup OOM recovery on Linux VM with a deliberately overstated memory budget; supervisor kept alive by `OOMPolicy=continue` |
 | Calibration: measured RSS, tokens/s and startup time feed back into estimates | ✅ | 54 held-out Linux VM runs across two model sizes and Q4/Q5/Q8: max RSS error 0.0583%; [grid report](docs/benchmarks/2026-11-06-quantization-grid/REPORT.md) |
 | Tool execution: executable allowlist + hard SIGKILL timeout | ✅ | Unit tests: `/usr/bin/curl`, `bash -c`, `python3 -c` denied; hung command killed in under 2 s |
-| Kernel isolation (Landlock / seccomp) | ❌ planned (M3) | Allowlisted tools run with your full user permissions |
+| Kernel isolation (Landlock / seccomp) | ❌ not implemented; product isolation belongs to TUMe | Allowlisted research tools run with your full user permissions |
 | Cloud backend | ❌ planned (M4) | The scheduler supports it; no backend ships, so it is never chosen |
 | Head-to-head benchmark vs fixed llama.cpp under a memory cap | Preliminary Linux VM evidence (M2) | Fixed 1.7B: 0/5; adaptive 360M: 5/5 under a real 1.5 GiB cgroup cap. [Report](docs/benchmarks/2026-11-05-linux-vm/REPORT.md); Pi results pending |
 
@@ -248,4 +253,8 @@ For each model (best quality first, or smallest first with `--prefer speed`), th
 
 [Plan](docs/PLAN.md) · [Research synthesis](docs/RESEARCH_SYNTHESIS.md) · [Linux VM report](docs/benchmarks/2026-11-05-linux-vm/REPORT.md) · [Quantization grid report](docs/benchmarks/2026-11-06-quantization-grid/REPORT.md) · [Zig requirement](docs/ZIG_VERSION_REQUIREMENT.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
-<sub>Not claimed yet: Raspberry Pi 5 results, pre-emptive step-down under memory pressure, kernel-level tool isolation, a cloud backend, or accuracy beyond the short-prompt VM grid.</sub>
+<sub>Not claimed yet: Raspberry Pi 5 results, pre-emptive step-down under memory pressure, kernel-level tool isolation, a cloud backend, task-quality results, superiority over tuned llama-server, Ollama or llama-swap, or accuracy beyond the short-prompt VM grid.</sub>
+
+### Quality pilot preparation
+
+The [offline evaluation suite](evaluation/README.md) provides 60 labeled cases, strict scoring and experiment manifest preparation. No task-quality results are claimed yet. `bench --freeze-calibration` now preserves request-level retry evidence in a JSONL sidecar; see the suite documentation for CSV schema changes.

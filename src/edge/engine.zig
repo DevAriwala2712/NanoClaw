@@ -18,6 +18,36 @@ pub const Generation = struct {
     attempts: u8,
 };
 
+pub const AttemptRecord = struct {
+    model: []const u8,
+    ctx: u32,
+    outcome: []const u8 = "spawn_error",
+    exit_code: ?u8 = null,
+    signal: ?u32 = null,
+    wall_ms: ?u64 = null,
+    peak_rss_bytes: ?u64 = null,
+    stdout: []const u8 = "",
+    stderr: []const u8 = "",
+};
+
+pub const RequestRecord = struct {
+    status: []const u8 = "internal_error",
+    total_wall_ms: u64 = 0,
+    deadline_ms: ?u64 = null,
+    deadline_missed: bool = false,
+    max_attempt_rss_bytes: ?u64 = null,
+    records: [3]AttemptRecord = undefined,
+    count: usize = 0,
+
+    pub fn deinit(self: *RequestRecord, allocator: std.mem.Allocator) void {
+        for (self.records[0..self.count]) |r| {
+            allocator.free(r.stdout);
+            allocator.free(r.stderr);
+        }
+        self.* = .{};
+    }
+};
+
 /// Bookkeeping for one model the engine knows about.
 pub const Entry = struct {
     spec: config.ModelSpec,
@@ -34,6 +64,9 @@ pub const Engine = struct {
     cand_entry: []usize,
     calibration: estimate.Calibration,
     quiet: bool = false,
+    record_calibration: bool = true,
+    last_request: RequestRecord = .{},
+    active_attempt: ?usize = null,
 
     pub fn init(allocator: std.mem.Allocator, cfg: *const config.RuntimeConfig) !Engine {
         var calibration = estimate.Calibration.init(allocator);
@@ -85,6 +118,7 @@ pub const Engine = struct {
     }
 
     pub fn deinit(self: *Engine) void {
+        self.last_request.deinit(self.allocator);
         self.calibration.deinit();
         self.allocator.free(self.entries);
         self.allocator.free(self.cands);
@@ -223,6 +257,17 @@ pub const Engine = struct {
         });
         defer r.deinit(self.allocator);
 
+        if (self.active_attempt) |idx| {
+            const record = &self.last_request.records[idx];
+            record.outcome = @tagName(r.outcome);
+            record.exit_code = if (r.outcome == .exited) r.exit_code else null;
+            record.signal = if (r.signal != 0) r.signal else null;
+            record.wall_ms = r.wall_ms;
+            record.peak_rss_bytes = r.peak_rss_bytes;
+            record.stdout = try self.allocator.dupe(u8, r.stdout);
+            record.stderr = try self.allocator.dupe(u8, r.stderr);
+            if (r.peak_rss_bytes) |rss| self.last_request.max_attempt_rss_bytes = @max(self.last_request.max_attempt_rss_bytes orelse 0, rss);
+        }
         switch (r.outcome) {
             .exited => if (r.exit_code != 0) {
                 const msg = std.mem.trim(u8, r.stderr, " \t\r\n");
@@ -241,7 +286,7 @@ pub const Engine = struct {
         }
 
         const stats = parseEvalStats(r.stderr);
-        if (r.peak_rss_bytes) |peak| {
+        if (self.record_calibration) if (r.peak_rss_bytes) |peak| {
             estimate.Calibration.append(self.cfg.calibration_path, cand.name, .{
                 .ctx = ctx,
                 .peak_rss_bytes = peak,
@@ -249,7 +294,7 @@ pub const Engine = struct {
                 .gen_ms = if (stats) |s| s.ms else 0,
                 .total_ms = r.wall_ms,
             }) catch |err| std.debug.print("[engine] could not record calibration: {}\n", .{err});
-        }
+        };
 
         return .{ .ok = .{
             .text = try self.allocator.dupe(u8, cleanOutput(r.stdout)),
@@ -277,7 +322,18 @@ pub const Engine = struct {
     /// Plans, runs, and on an OOM kill / crash / timeout excludes that rung and
     /// re-plans against fresh memory numbers, up to `max_attempts` times.
     pub fn generate(self: *Engine, prompt: []const u8, req: scheduler.Request, override_available_mb: ?u64) !Generation {
-        if (self.cands.len == 0) return error.NoUsableModels;
+        self.last_request.deinit(self.allocator);
+        self.last_request.deadline_ms = req.deadline_ms;
+        var timer = try std.time.Timer.start();
+        defer {
+            self.active_attempt = null;
+            self.last_request.total_wall_ms = timer.read() / std.time.ns_per_ms;
+            self.last_request.deadline_missed = if (req.deadline_ms) |d| self.last_request.total_wall_ms >= d else false;
+        }
+        if (self.cands.len == 0) {
+            self.last_request.status = "scheduler_refusal";
+            return error.NoUsableModels;
+        }
 
         var owned_template: ?[]u8 = null;
         defer if (owned_template) |t| self.allocator.free(t);
@@ -293,10 +349,19 @@ pub const Engine = struct {
         const max_attempts: u8 = 3;
         var attempt: u8 = 0;
         while (attempt < max_attempts) : (attempt += 1) {
+            var remaining_req = req;
+            if (req.deadline_ms) |deadline| {
+                const elapsed = timer.read() / std.time.ns_per_ms;
+                if (elapsed >= deadline) {
+                    self.last_request.status = "deadline_exhausted";
+                    return error.DeadlineExceeded;
+                }
+                remaining_req.deadline_ms = deadline - elapsed;
+            }
             const b = try self.budget(override_available_mb);
             var trace: scheduler.Trace = .{};
             defer trace.deinit(self.allocator);
-            const choice = try self.plan(req, b, &trace);
+            const choice = try self.plan(remaining_req, b, &trace);
             self.printTrace(trace.items, b);
 
             const local = switch (choice) {
@@ -304,14 +369,35 @@ pub const Engine = struct {
                 .cloud => return error.CloudBackendNotImplemented,
                 .refuse => |why| {
                     std.debug.print("[scheduler] refusing: {s}\n", .{why});
+                    self.last_request.status = if (self.last_request.count == 0) "scheduler_refusal" else "backend_failed";
                     return error.NoModelFits;
                 },
             };
-            const timeout_ms = if (req.deadline_ms) |d| @min(d, self.cfg.llm_timeout_ms) else self.cfg.llm_timeout_ms;
-            switch (try self.runOnce(template, local.candidate, local.ctx, req.max_new_tokens, prompt, prompt_file, timeout_ms)) {
+            var timeout_ms = self.cfg.llm_timeout_ms;
+            if (req.deadline_ms) |deadline| {
+                const elapsed = timer.read() / std.time.ns_per_ms;
+                if (elapsed >= deadline) {
+                    self.last_request.status = "deadline_exhausted";
+                    return error.DeadlineExceeded;
+                }
+                timeout_ms = @min(timeout_ms, deadline - elapsed);
+            }
+            self.active_attempt = self.last_request.count;
+            self.last_request.records[self.last_request.count] = .{ .model = self.cands[local.candidate].name, .ctx = local.ctx };
+            self.last_request.count += 1;
+            var attempt_timer = try std.time.Timer.start();
+            const result = self.runOnce(template, local.candidate, local.ctx, req.max_new_tokens, prompt, prompt_file, timeout_ms) catch |err| {
+                const record = &self.last_request.records[self.active_attempt.?];
+                if (record.wall_ms == null) record.wall_ms = attempt_timer.read() / std.time.ns_per_ms;
+                self.last_request.status = "backend_error";
+                return err;
+            };
+            self.active_attempt = null;
+            switch (result) {
                 .ok => |g| {
                     var out = g;
                     out.attempts = attempt + 1;
+                    self.last_request.status = "completed";
                     return out;
                 },
                 .failed => {
@@ -320,6 +406,7 @@ pub const Engine = struct {
                 },
             }
         }
+        self.last_request.status = "backend_failed";
         return error.AllAttemptsFailed;
     }
 };

@@ -14,7 +14,7 @@ fn printUsage() void {
             "  nanoclaw-next probe                     device memory, model costs, default decision\n" ++
             "  nanoclaw-next plan [request flags]      dry-run the scheduler (no model is run)\n" ++
             "  nanoclaw-next calibrate [--prompt TEXT] [--tokens N]  measure every model's RSS and speed\n" ++
-            "  nanoclaw-next bench --prompt TEXT [--runs N] [--out FILE] [request flags]\n" ++
+            "  nanoclaw-next bench --prompt TEXT [--runs N] [--out FILE] [--freeze-calibration] [request flags]\n" ++
             "  nanoclaw-next run [--prompt TEXT | --interactive]\n" ++
             "  nanoclaw-next prompt                    interactive run\n" ++
             "  nanoclaw-next selftest                  model-free checks for this device\n" ++
@@ -43,6 +43,7 @@ const Flags = struct {
     prompt: ?[]const u8 = null,
     interactive: bool = false,
     runs: u32 = 5,
+    freeze_calibration: bool = false,
     out: []const u8 = "state/bench.csv",
 };
 
@@ -51,6 +52,10 @@ fn parseFlags(args: []const []const u8, base: scheduler.Request) !Flags {
     var i: usize = 0;
     while (i < args.len) : (i += 1) {
         const arg = args[i];
+        if (std.mem.eql(u8, arg, "--freeze-calibration")) {
+            f.freeze_calibration = true;
+            continue;
+        }
         if (std.mem.eql(u8, arg, "--interactive")) {
             f.interactive = true;
             continue;
@@ -153,7 +158,7 @@ fn realMain() !void {
             std.debug.print("bench needs --prompt TEXT\n", .{});
             return;
         };
-        try app.bench(.{ .prompt = prompt, .runs = flags.runs, .out_path = flags.out, .available_mb = flags.available_mb }, flags.req);
+        try app.bench(.{ .prompt = prompt, .runs = flags.runs, .out_path = flags.out, .available_mb = flags.available_mb, .freeze_calibration = flags.freeze_calibration }, flags.req);
     } else if (std.mem.eql(u8, cmd, "calibrate")) {
         try app.calibrate(flags.prompt orelse "List three uses of a Raspberry Pi.", @min(flags.req.max_new_tokens, 64));
     } else if (std.mem.eql(u8, cmd, "selftest")) {

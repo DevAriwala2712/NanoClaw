@@ -1,12 +1,16 @@
-# Plan: from "<2 MB agent OS" to an adaptive edge-inference scheduler
+# Research plan: memory-efficient inference with useful model behavior
 
 _Derived from [RESEARCH_SYNTHESIS.md](RESEARCH_SYNTHESIS.md). Date: 2026-10-26._
+
+**Scope updated 2026-11-06:** NanoClaw-Next is the research repository. [TUMe](https://github.com/DevAriwala2712/TUMe) owns the maintenance-product direction: monitoring, diagnosis, permitted recovery, APIs and integrations. See [PROJECT_SPLIT.md](PROJECT_SPLIT.md). The existing M1/M2 evidence is retained; future work must measure task usefulness alongside resource savings.
 
 ## Positioning
 
 > **Given the memory actually free on this device right now, the latency budget, and how sensitive the request is, run the best model × context that fits. When things go wrong, step down a rung instead of crashing, and explain why.**
 
 What we are **not** building: another agent harness competing on binary size (NullClaw, PicoClaw and ZeroClaw already own that), or an inference engine (llama.cpp already is one). We drive llama.cpp; the contribution is the decision layer and the evidence.
+
+**Quality requirement:** preserving a configured model ranking is not a quality evaluation. Compare policies on task correctness, completeness, uncertainty/refusal behavior and the whole workload's memory/latency. A smaller model that returns an incorrect answer is not a successful optimization. The [evaluation protocol](QUALITY_EVALUATION.md) defines the research approach; its quality criteria must be set before experiments.
 
 ## Architecture
 
@@ -61,23 +65,27 @@ Still outstanding: physical Pi validation, the PSI-pressure policy/experiment, a
 3. Pressure experiment: a background memory hog ramps up mid-run; show pre-emptive step-down when PSI `some avg10` rises.
 4. Publish the results table in the README.
 
-### M3: Real isolation for tool execution
-- Landlock (filesystem: read-only home, writable `state/`), seccomp-bpf (deny `connect`, `ptrace`, `mount`), `PR_SET_NO_NEW_PRIVS`, and dropping to a dedicated user.
-- Tests run on Linux CI (GitHub Actions `ubuntu-latest` + `aarch64` runner).
-- Only after this lands may the README mention sandboxing.
+### M3: Quality-preserving evaluation _(planned)_
+- Build labeled tasks for extraction, reasoning, system diagnosis, permitted-procedure selection and uncertainty/refusal. Use held-out cases and predefined rubrics.
+- Compare fixed-large, fixed-small, tuned-server and adaptive policies at the same RAM limits, prompts, output budgets and operating conditions.
+- Publish correct-task completion, invalid recommendations, refusals, total retry-inclusive latency, peak RSS and cgroup charge. Set task-specific quality floors before comparing policies.
+- Keep optimization claims limited to measured workloads. The existing small-model mistakes are failures to account for, not exceptions to hide.
+- Production isolation and maintenance runbooks belong to TUMe. This repository's existing tool path remains experimental and does not provide kernel isolation.
 
-### M4: Persistent engine and smarter policies
+### M4: Persistent engine and memory-policy research _(planned)_
 - Link `libllama` or drive a long-lived `llama-server`, so weights stay mapped between requests and swap cost is paid only on a model change.
 - KV cache quantization (`q8_0`) as an extra rung on the ladder.
 - Learned latency model (prompt-processing and generation tokens/s per model), thermal-throttle awareness on the Pi.
 - Optional cloud backend (OpenAI-compatible HTTP), off by default.
 
-### M5: Agent layer (only after M2 shows a win)
-Revisit hierarchical memory, skills and tool fallback, which exist today as experimental scaffolding.
+Evaluate each candidate's quality and total-footprint effects under M3, including context loss, prompt truncation, output limits, GPU memory versus RSS, deadline misses and retries. Deadline-aware estimates are not a proven whole-request service guarantee.
+
+### M5: Transfer validated results into TUMe _(planned)_
+Document a source commit, supported backend/configuration, experiment evidence and integration contract for each policy adopted by TUMe. Prefer selective reviewed transfers; do not automatically merge experiments into the product. Maintenance features, portals, messaging and fleet management stay in TUMe's roadmap.
 
 ## What unlocks the most potential
 
-1. **The scheduler + calibration loop (M1)** turns the project from claims into a tool that behaves differently from Ollama under memory pressure. Everything else depends on it.
+1. **The scheduler + calibration loop (M1)** provides a measurable base for CPU/container memory decisions; superiority over tuned serving tools remains unproven.
 2. **The capped benchmark (M2)** is the single artifact that makes the project credible to reviewers, employers and users.
 3. **A persistent engine (M4)** removes the per-request model-load cost, which otherwise eats the latency budget on a Pi.
 
@@ -90,3 +98,12 @@ Revisit hierarchical memory, skills and tool fallback, which exist today as expe
 | Per-request process spawn is slow | M4 persistent engine; benchmarks report load time separately |
 | Name collision with NanoClaw | Decide on a rename (EdgeMorph / NanoEdge Runtime) after checking availability |
 | Zig 0.15.2 `zig build` fails on macOS 27 (linker can't read the new SDK) | Documented workaround: `zig build-exe … -target aarch64-macos.15.0`; CI on Linux |
+
+### M3 preparation update (2026-11-06)
+
+Implemented request-level retry evidence and shared deadlines, plus an offline
+60-case suite and strict response scorer. See [evaluation guide](../evaluation/README.md).
+These are implementation artifacts, not measured quality results. Scoring remains
+provisional until run ingestion binds treatment identities and tokenizer counts
+to a verified experiment manifest; Linux cgroup collection and inference runs
+remain separately authorized experiment work.
