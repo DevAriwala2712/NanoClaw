@@ -1,0 +1,16 @@
+
+[bench] run 1/1
+[scheduler] usable memory 3840 MB (available 4096 MB - headroom 256 MB)
+[scheduler]   smollm2-1.7b         ctx=4096   need  2813 MB  ~4521 ms  -> fits
+[engine] running smollm2-1.7b ctx=4096
+[engine] smollm2-1.7b failed (signaled: SIGKILL, likely OOM, peak 1533 MB); stepping down
+[scheduler] usable memory 3840 MB (available 4096 MB - headroom 256 MB)
+[scheduler]   smollm2-1.7b         -> failed earlier this run
+[scheduler]   smollm2-360m         ctx=4096   need   556 MB  ~946 ms  -> fits
+[engine] running smollm2-360m ctx=4096
+
+=== Bench summary (1 runs) ===
+  success:      1/1
+  wall p50/p95: 767 / 767 ms
+  peak RSS max: 555 MB (child process, wait4)
+  csv:          /home/ubuntu/NanoClaw/state/m2-vm/recovery/bench.csv

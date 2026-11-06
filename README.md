@@ -19,17 +19,17 @@ $ nanoclaw-next plan --available-mb 1800
 
 | Capability | Status | Evidence |
 |---|---|---|
-| Live memory: Linux `MemAvailable` + cgroup v2 limit + PSI; macOS `memorystatus` | ✅ | Unit tests with fixtures; live read on macOS; Linux path compiles, not yet run on Linux |
+| Live memory: Linux `MemAvailable` + cgroup v2 limit + PSI; macOS `memorystatus` | ✅ | Unit tests with fixtures; live reads on macOS and Ubuntu ARM64 VM; real cgroup cap verified |
 | Model cost from GGUF metadata (weights + KV cache per token) | ✅ | Unit tests on synthetic GGUF headers |
 | Degradation ladder: shrink context → smaller model → cloud (never if `--sensitive`) → refuse | ✅ | 7 scheduler unit tests + CLI runs |
 | llama.cpp backend via command template; per-run peak RSS from `wait4` | ✅ | Real SmolLM2 1.7B / 360M on llama.cpp 0.7.0; `wait4` RSS matches `/usr/bin/time -l` within 1 MB |
 | Timeout → exclude rung and retry | ✅ | Real: a 1.7B run killed at a 1.5 s deadline fell back to the 360M |
-| OOM kill → exclude rung and retry | ✅ (simulated) | Fake backend that SIGKILLs itself; real cgroup OOM is part of M2 |
+| OOM kill → exclude rung and retry | ✅ | Real llama.cpp cgroup OOM recovery on Linux VM with a deliberately overstated memory budget; supervisor kept alive by `OOMPolicy=continue` |
 | Calibration: measured RSS, tokens/s and startup time feed back into estimates | ✅ | Held-out context predicted to within 2 MB (see below) |
 | Tool execution: executable allowlist + hard SIGKILL timeout | ✅ | Unit tests: `/usr/bin/curl`, `bash -c`, `python3 -c` denied; hung command killed in under 2 s |
 | Kernel isolation (Landlock / seccomp) | ❌ planned (M3) | Allowlisted tools run with your full user permissions |
 | Cloud backend | ❌ planned (M4) | The scheduler supports it; no backend ships, so it is never chosen |
-| Head-to-head benchmark vs llama.cpp/Ollama under a memory cap | ❌ planned (M2) | Script ready: [scripts/compare-linux.sh](scripts/compare-linux.sh) |
+| Head-to-head benchmark vs fixed llama.cpp under a memory cap | Preliminary Linux VM evidence (M2) | Fixed 1.7B: 0/5; adaptive 360M: 5/5 under a real 1.5 GiB cgroup cap. [Report](docs/benchmarks/2026-11-05-linux-vm/REPORT.md); Pi results pending |
 
 Experimental agent scaffolding (in-memory hierarchical memory, tool-name aliases) is kept but is not the focus. `src/skills/` and `src/memory.zig` are design stubs that aren't wired in.
 
@@ -62,14 +62,25 @@ MacBook (Apple Silicon, 18 GB, macOS 27), llama.cpp 0.7.0 (Homebrew), CPU only (
 
 **Quality, not just fit:** for "show how much disk space is free", the 1.7B produced `df`. The 360M produced `ls /dev/disk/by-id/` on one run and a commented multi-line script on another. `run` therefore prefers the best model for both steps; the small model is used only under memory or deadline pressure.
 
+## First Linux VM comparison (2026-11-05)
+
+Ubuntu 24.04 ARM64, 4 virtual CPUs / 4 GiB RAM on Apple Silicon; CPU-only llama.cpp build 11669. Same prompt, context 4096, maximum 128 tokens, temperature 0, seed 1; five alternating runs per strategy. A fresh 1536 MiB cgroup cap with swap disabled applies to each run; the VM Linux page cache is cleared before each run.
+
+| Strategy | Completed | Successful end-to-end p50 / p95 | Max process RSS | Real OOM kills |
+|---|---:|---:|---:|---:|
+| Fixed SmolLM2 1.7B @ 4096 | 0/5 | N/A | 1533.5 MiB | 5 |
+| Scheduler → SmolLM2 360M @ 4096 | 5/5 | 810 / 911 ms | 555.5 MiB | 0 |
+
+End-to-end time includes scope creation, scheduling and model loading. Completion is not a quality score; the smaller model has a quality tradeoff. A separate forced-overestimate check recovered from a real OOM on attempt two. Q4 memory estimates at held-out context 2048 were within 0.2% for both models. These are preliminary **VM** results, not Pi performance or completion of M2. See the [method, raw data and limitations](docs/benchmarks/2026-11-05-linux-vm/REPORT.md).
+
 ## Build facts
 
 | Metric | Value | Method |
 |---|---|---|
 | Binary, aarch64-linux-musl | 147 KB | `zig build-exe src/main.zig -target aarch64-linux-musl -OReleaseSmall -fstrip`, Zig 0.15.2, static |
 | Binary, x86_64-linux-musl | 158 KB | same, x86_64 target |
-| Unit tests | 32/32 pass | `zig test src/tests.zig` on macOS 27 (arm64) |
-| Selftest | 10/10 pass | `nanoclaw-next selftest` on macOS 27 |
+| Unit tests | 32/32 pass | Zig 0.15.2, macOS arm64 and Ubuntu ARM64 VM (2026-11-05) |
+| Selftest | 10/10 pass | `nanoclaw-next selftest` on macOS and Ubuntu ARM64 VM |
 
 The binary is small because inference runs in a separate llama.cpp process; binary size is not the point of this project. Peak inference memory is the llama.cpp process's, reported per run by `bench`.
 
@@ -148,7 +159,8 @@ For each model (best quality first, or smallest first with `--prefer speed`), th
   zig test src/tests.zig -target aarch64-macos.15.0
   ```
 - Each request starts a fresh llama.cpp process, so model load time is paid on every request. A persistent engine is M4 in the plan.
-- Measured on an Apple Silicon Mac, not yet on a Pi 5 or under a real cgroup OOM; that's M2.
+- Measured on an Apple Silicon Mac and an Ubuntu ARM64 VM, including real cgroup OOM. Physical Pi 5 measurements remain part of M2.
+- PSI is reported but is not used to pre-emptively change a running model. The M2 pressure experiment still requires policy work.
 - llama.cpp's own `--fit` (on by default) already adapts GPU layers and context for a single model. NanoClaw-Next works one level up: which model, deadlines, sensitivity, and recovery after failure.
 
 ## Naming

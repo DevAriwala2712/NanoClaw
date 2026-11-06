@@ -1,0 +1,2 @@
+run,ok,model,ctx,attempts,wall_ms,peak_rss_mb,gen_tokens,gen_ms,error
+1,1,smollm2-360m,4096,2,767,555,83,402,

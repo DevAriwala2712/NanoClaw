@@ -1,0 +1,11 @@
+strategy,run,ok,exit,model,end_to_end_ms,command_peak_rss_kib,cgroup_peak_bytes,oom_kills,child_wall_ms,child_peak_rss_mib
+baseline,1,0,137,smollm2-1.7b,2958,1570100,1610612736,1,,
+adaptive,1,1,0,smollm2-360m,911,568612,628404224,0,824,555
+baseline,2,0,137,smollm2-1.7b,1971,1570348,1610612736,1,,
+adaptive,2,1,0,smollm2-360m,850,568752,628252672,0,775,555
+baseline,3,0,137,smollm2-1.7b,1997,1570000,1610612736,1,,
+adaptive,3,1,0,smollm2-360m,805,568876,627875840,0,742,555
+baseline,4,0,137,smollm2-1.7b,2012,1570228,1610612736,1,,
+adaptive,4,1,0,smollm2-360m,810,568876,628125696,0,741,555
+baseline,5,0,137,smollm2-1.7b,1937,1570224,1610612736,1,,
+adaptive,5,1,0,smollm2-360m,810,568624,628125696,0,747,555
