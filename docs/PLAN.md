@@ -129,10 +129,10 @@ implements the tuned-context selection rule. Drafts for the four development swe
 contexts are in `state/quality/prepared/` (ignored by Git). They are unfrozen
 until hardware, authorization and repetitions are set.
 
-**Blocker found while preparing:** held-out prompts reach 5660 tokens, so only
-7/10 cases per family fit at context 4096. The 9/10 gate is unreachable for
-every arm until the context set, the gate or the long cases change. See the
-[evaluation guide](../evaluation/README.md#preparing-manifests).
+**Context set extended to 8192:** held-out prompts reach 5660 tokens, so only
+7/10 cases per family fit at 4096 and the 9/10 gate was unreachable. 8192 (the
+models' trained context) is now a study context, and the fixed arms default to it.
+See the [evaluation guide](../evaluation/README.md#preparing-manifests).
 
 Next, as authorized experiment work: fill and freeze a development manifest
 (pinned llama.cpp build, model hashes, tokenizer counts per case). Sweep

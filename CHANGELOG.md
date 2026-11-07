@@ -12,6 +12,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/). Entries are taken from 
 - `CONTRIBUTING.md`, `.editorconfig`, issue and pull request templates.
 
 ### Changed
+- Quality study contexts now include 8192, and fixed arms default to it. At 4096, held-out prompts (up to 5660 tokens) left only 7/10 cases per family eligible, below the 9/10 gate.
 - README rebuilt around measured evidence. Loose root files moved: `ZIG_VERSION_REQUIREMENT.md` to `docs/`, `Resources/` to `docs/archive/`.
 
 ## 2026-11-06

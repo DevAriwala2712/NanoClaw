@@ -72,7 +72,7 @@ class PrepareManifest(unittest.TestCase):
         self.assertEqual(p['text'], prep.render(case['prompt']))
         self.assertEqual(p['tokens'], len(p['text']) // 4)
         self.assertEqual(m['tuned_context_by_cap'], {'1536': 1024, '2048': 1024, '3072': 1024})
-        self.assertEqual(m['fixed_context'], 4096)
+        self.assertEqual(m['fixed_context'], 8192)
         self.assertEqual(m['models'][0]['tokenizer_id'], 'gpt2/smollm/vocab3/bos=None')
         self.assertIn('{prompt_file}', m['models'][0]['backend_arguments'])
         self.assertIn('build 11669', m['backend_build'])

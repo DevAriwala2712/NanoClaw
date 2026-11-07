@@ -9,6 +9,7 @@ from pathlib import Path
 import shutil
 
 FAMILIES = ('extraction', 'diagnosis', 'uncertainty')
+STUDY_CONTEXTS = [512, 1024, 2048, 4096, 8192]
 STATUSES = {'completed', 'backend_failed', 'backend_error', 'scheduler_refusal',
             'deadline_exhausted', 'context_ineligible'}
 
@@ -189,7 +190,7 @@ def digest(path):
 
 def validate_manifest(m, cases, ready=False):
     require(m.get('schema_version')==1, 'unsupported manifest schema')
-    require(m.get('contexts')==[512,1024,2048,4096] and m.get('output_tokens')==128, 'changed study budgets')
+    require(m.get('contexts')==STUDY_CONTEXTS and m.get('output_tokens')==128, 'changed study budgets')
     require(m.get('calibration_frozen') is True, 'evaluation must freeze calibration')
     require(m.get('split') in ('development','heldout'), 'choose one split')
     require(m.get('policies') == ['fixed_large','fixed_small','tuned_large','adaptive_input_gate'], 'unexpected policy arms')

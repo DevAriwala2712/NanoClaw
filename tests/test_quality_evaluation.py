@@ -89,6 +89,13 @@ class QualityScoring(unittest.TestCase):
         bad = copy.deepcopy(cases); bad[0]['evidence']['e1'] = 'not in prompt'
         with self.assertRaises(ValueError): q.validate_cases(bad)
 
+    def test_study_contexts_include_8192(self):
+        cases = q.load_cases(ROOT / 'evaluation/cases.jsonl')
+        manifest = json.loads((ROOT/'evaluation/manifest.template.json').read_text())
+        self.assertEqual(manifest['contexts'], [512,1024,2048,4096,8192])
+        manifest['contexts'] = [512,1024,2048,4096]
+        with self.assertRaises(ValueError): q.validate_manifest(manifest,cases)
+
     def test_template_cannot_be_frozen_as_ready(self):
         cases = q.load_cases(ROOT / 'evaluation/cases.jsonl')
         manifest = json.loads((ROOT/'evaluation/manifest.template.json').read_text())

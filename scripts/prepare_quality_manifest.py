@@ -221,7 +221,8 @@ def main(argv=None):
     a.add_argument('--tokenizer', type=Path, required=True, help='llama-tokenize from the pinned build')
     a.add_argument('--llama-completion', required=True, help='llama-completion path ON THE TARGET machine')
     a.add_argument('--threads', type=int, default=4)
-    a.add_argument('--fixed-context', type=int, default=4096)
+    a.add_argument('--fixed-context', type=int, default=8192,
+                   help='fixed arms; 8192 is the smallest study context every case fits')
     a.add_argument('--repetitions', type=int)
     a.add_argument('--hardware')
     a.add_argument('--authorization')

@@ -97,6 +97,7 @@ class QualityDriver(unittest.TestCase):
         out, records = self.run_arm('adaptive_input_gate', extra=['--limit', '1'])
         seen = json.loads((out / 'requests' / (self.heldout[0]['id'] + '-r1') / 'argv-seen.json').read_text())
         self.assertNotIn('--available-mb', seen)
+        self.assertEqual(seen[seen.index('--ctx') + 1], '8192')
         self.assertEqual(seen[seen.index('--min-ctx') + 1], '512')  # 300 + 128 tokens fit 512
         self.assertEqual(records[0]['context'], 512)
         self.ingest(out)

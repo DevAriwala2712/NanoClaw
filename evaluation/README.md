@@ -63,7 +63,7 @@ not filesystem-enforced immutability. Keep model files and raw runtime artifacts
 separately; manifest hashes identify them. This command does not run inference.
 
 Proposed experiment: existing CPU models, caps 1536/2048/3072 MiB, contexts
-512/1024/2048/4096, 128 output tokens. A development-only sweep measures eligible
+512/1024/2048/4096/8192, 128 output tokens. A development-only sweep measures eligible
 model/context pairs before choosing the tuned baseline. Exact repetitions,
 resource availability and cache procedure remain to be set before authorization.
 New experiments, model downloads and VM operations require explicit approval.
@@ -171,7 +171,7 @@ SHA-256 becomes `development_results_sha256`. The rendered-prompt assumption
 should be checked once on the target, for example by comparing
 `llama-completion --verbose-prompt` token counts for one case per model.
 
-**Known blocker (2026-11-07).** With the pinned b11669 tokenizer, prompts range
+**Context coverage (2026-11-07).** With the pinned b11669 tokenizer, prompts range
 from 116 to 5660 tokens, and counts are identical for both models. Including the
 128 reserved output tokens, the number of cases that fit is:
 
@@ -181,12 +181,13 @@ from 116 to 5660 tokens, and counts are identical for both models. Including the
 | 1024 | 6/10 | 4/10 |
 | 2048 | 6/10 | 4/10 |
 | 4096 | 8/10 | 7/10 |
-| 8192 | not a study context | 10/10 |
+| 8192 | 10/10 | 10/10 |
 
-The held-out gate requires 9/10 per family, so no arm can pass with the frozen
-512–4096 contexts. Resolve this before authorization: either add 8192 as a study
-context, or redefine the gate over eligible cases, or shorten the long-input
-cases.
+With 512–4096 only, no arm could reach the 9/10 held-out gate, so 8192
+(SmolLM2's trained context) is now a study context. Fixed arms default to
+`fixed_context` 8192, the only context every case fits. Fixed arms therefore
+fail on memory, not on input length. The tuned arm still picks its context per
+cap from development data, and the adaptive arm starts at 8192 and halves.
 
 ## Running an arm
 
@@ -212,7 +213,7 @@ models) and keeps the raw argv, stdout/stderr and request sidecar.
 - **Fixed and tuned arms** configure one model at the frozen context and pass
   `--available-mb` large enough to disable adaptation. The kernel cap is the
   only memory limit, and an OOM kill ends as `backend_failed`.
-- **The adaptive arm** configures both models with `--ctx 4096`. `--min-ctx` is
+- **The adaptive arm** configures both models with `--ctx 8192`. `--min-ctx` is
   the smallest study context that fits every model's rendered prompt plus the
   output tokens. That is the input gate; there is no truncation.
 - **Inputs that cannot fit** are recorded as `context_ineligible` and never launched.
