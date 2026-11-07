@@ -107,3 +107,34 @@ These are implementation artifacts, not measured quality results. Scoring remain
 provisional until run ingestion binds treatment identities and tokenizer counts
 to a verified experiment manifest; Linux cgroup collection and inference runs
 remain separately authorized experiment work.
+
+### M3 run ingestion (2026-11-07)
+
+`evaluate_quality.py ingest` binds one policy/cap run to a frozen bundle. It checks
+bundle checksums, the frozen scorer, each arm's model and context, per-case
+token counts, rendered-prompt hashes, backend arguments and eligibility status.
+A run can pass the quality gate only when it is bound, complete, held out and
+fully measured, including cgroup charge and OOM counts. The manifest now declares
+`fixed_context` for the fixed arms.
+
+`scripts/run_quality_arm.py` is the execution driver. It runs one arm per cap,
+with each request in its own systemd scope (MemoryMax, no swap,
+OOMPolicy=continue). It captures `memory.peak` and OOM kills, checks model and
+calibration hashes, gates ineligible inputs before launch, and writes `run.json`
+for `ingest`. It is tested against a fake backend only. No inference has been
+run.
+
+`scripts/prepare_quality_manifest.py` fills manifests from the pinned tokenizer and
+implements the tuned-context selection rule. Drafts for the four development sweep
+contexts are in `state/quality/prepared/` (ignored by Git). They are unfrozen
+until hardware, authorization and repetitions are set.
+
+**Blocker found while preparing:** held-out prompts reach 5660 tokens, so only
+7/10 cases per family fit at context 4096. The 9/10 gate is unreachable for
+every arm until the context set, the gate or the long cases change. See the
+[evaluation guide](../evaluation/README.md#preparing-manifests).
+
+Next, as authorized experiment work: fill and freeze a development manifest
+(pinned llama.cpp build, model hashes, tokenizer counts per case). Sweep
+development contexts to freeze `tuned_context_by_cap`, then run the held-out arms
+on the Ubuntu VM.

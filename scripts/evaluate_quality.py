@@ -197,6 +197,7 @@ def validate_manifest(m, cases, ready=False):
     if not ready: return
     for field in ('hardware','backend_build','source_commit','sampling','threads','cache_procedure','ordering','authorization'):
         require(m.get(field), 'unresolved manifest field: '+field)
+    require(m.get('fixed_context') in m['contexts'], 'set fixed_context for the fixed arms')
     require(m.get('process_lifetime')=='cold' and m.get('swap_enabled') is False, 'cold/no-swap study required')
     require(type(m.get('repetitions')) is int and m['repetitions']>0, 'set repetitions')
     require(m.get('cases_sha256') and len(m['cases_sha256'])==64, 'missing cases hash')
@@ -240,9 +241,99 @@ def freeze_bundle(cases_path, manifest_path, destination):
     return hashes
 
 
+BUNDLE_FILES = {'cases.jsonl','manifest.json','evaluate_quality.py'}
+MEASUREMENTS = ('total_wall_ms','max_attempt_rss_bytes','cgroup_peak_bytes','oom_kills','deadline_missed')
+
+
+def text_digest(text):
+    return hashlib.sha256(text.encode()).hexdigest()
+
+
+def load_bundle(bundle):
+    """Verify a frozen bundle and that THIS scorer is the one frozen in it."""
+    bundle = Path(bundle)
+    checksums = strict_json((bundle/'checksums.json').read_text())
+    require(set(checksums)==BUNDLE_FILES, 'bundle checksum list does not match the frozen files')
+    for name,expected in checksums.items():
+        require(digest(bundle/name)==expected, 'bundle file changed after freeze: '+name)
+    require(digest(__file__)==checksums['evaluate_quality.py'],
+            'run the frozen scorer: python3 '+str(bundle/'evaluate_quality.py')+' ingest ...')
+    cases = load_cases(bundle/'cases.jsonl')
+    m = strict_json((bundle/'manifest.json').read_text())
+    validate_manifest(m,cases,ready=True)
+    return cases, m, digest(bundle/'checksums.json')
+
+
+def treatment_rule(m, policy, cap):
+    """Allowed (model IDs, contexts) for an arm. models[0] is the large model, models[1] the small one."""
+    large, small = m['models'][0]['id'], m['models'][1]['id']
+    fixed = {m['fixed_context']}
+    return {'fixed_large': ({large}, fixed),
+            'fixed_small': ({small}, fixed),
+            'tuned_large': ({large}, {m['tuned_context_by_cap'][str(cap)]}),
+            'adaptive_input_gate': ({large, small}, set(m['contexts']))}[policy]
+
+
+def bind_record(r, m, policy, cap, prompts, models):
+    """Reject a record whose treatment, prompt or tokenizer count differs from the frozen manifest."""
+    where = '%s rep %s: ' % (r.get('case_id'), r.get('repetition'))
+    model_id, context = r.get('model_id'), r.get('context')
+    if r.get('status')=='scheduler_refusal':
+        require(policy=='adaptive_input_gate', where+'only the adaptive arm can refuse before running')
+        require(model_id is None and context is None, where+'a refusal cannot carry a model or context')
+        return None
+    allowed_models, allowed_contexts = treatment_rule(m,policy,cap)
+    require(model_id in allowed_models, where+'model %r is outside the %s arm' % (model_id,policy))
+    require(context in allowed_contexts, where+'context %r is outside the %s arm' % (context,policy))
+    prompt = prompts[r['case_id'],model_id]
+    require(r.get('prompt_tokens')==prompt['tokens'], where+'prompt token count differs from the manifest')
+    require(r.get('rendered_prompt_sha256')==text_digest(prompt['text']), where+'rendered prompt differs from the manifest')
+    require(r.get('backend_arguments')==models[model_id]['backend_arguments'], where+'backend arguments differ from the manifest')
+    fits = eligible(prompt['tokens'],context,m['output_tokens'])
+    require(fits == (r['status']!='context_ineligible'), where+'status contradicts input eligibility')
+    return model_id, context
+
+
+def ingest(bundle, run_path, records_path):
+    cases, m, checksums_sha = load_bundle(bundle)
+    run = strict_json(Path(run_path).read_text())
+    require(run.get('schema_version')==1, 'unsupported run sidecar schema')
+    require(run.get('bundle_checksums_sha256')==checksums_sha, 'run was not produced from this bundle')
+    require(run.get('records_sha256')==digest(records_path), 'records file differs from the run sidecar')
+    require(run.get('split')==m['split'], 'run split differs from the manifest')
+    require(run.get('repetitions')==m['repetitions'], 'run repetitions differ from the manifest')
+    policy, cap = run.get('policy'), run.get('cap_mib')
+    require(policy in m['policies'], 'unknown policy arm')
+    require(cap in m['caps_mib'], 'cap is not in the manifest')
+    records = read_jsonl(records_path)
+    selected = [c for c in cases if c['split']==m['split']]
+    summary = summarize(selected,records,m['repetitions'])
+    prompts = {(p['case_id'],p['model_id']):p for p in m['rendered_prompts']}
+    models = {x['id']:x for x in m['models']}
+    choices = Counter()
+    for r in records:
+        choice = bind_record(r,m,policy,cap,prompts,models)
+        choices['refused' if choice is None else '%s@%d' % choice] += 1
+    complete = len(records)==len(selected)*m['repetitions']
+    # context_ineligible requests are gated before launch, so nothing exists to measure.
+    unmeasured = sorted({k for r in records if r['status']!='context_ineligible'
+                         for k in MEASUREMENTS if r.get(k) is None})
+    provisional = not complete or bool(unmeasured)
+    reasons = (['missing rows'] if not complete else []) + (['unmeasured: '+', '.join(unmeasured)] if unmeasured else [])
+    summary.update(policy=policy,cap_mib=cap,split=m['split'],bound=True,
+                   bundle_checksums_sha256=checksums_sha,records_sha256=run['records_sha256'],
+                   selections=dict(choices),provisional=provisional,
+                   provisional_reason='; '.join(reasons) or None,
+                   quality_floor_passed=bool(summary['observed_quality_floor_met'] and not provisional
+                                             and m['split']=='heldout'))
+    return summary
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['validate','score','freeze'])
+    parser.add_argument('command', choices=['validate','score','freeze','ingest'])
+    parser.add_argument('--bundle',type=Path)
+    parser.add_argument('--run',type=Path)
     parser.add_argument('--cases',type=Path,default=Path('evaluation/cases.jsonl'))
     parser.add_argument('--manifest',type=Path,default=Path('evaluation/manifest.template.json'))
     parser.add_argument('--records',type=Path)
@@ -255,6 +346,9 @@ def main():
         if args.command=='validate':
             validate_manifest(strict_json(args.manifest.read_text()),cases)
             result = {'cases':len(cases),'cases_sha256':digest(args.cases),'experiment_ready':False}
+        elif args.command=='ingest':
+            require(args.bundle and args.run and args.records,'--bundle, --run and --records required')
+            result = ingest(args.bundle,args.run,args.records)
         elif args.command=='freeze':
             require(args.out is not None,'--out directory required')
             result = freeze_bundle(args.cases,args.manifest,args.out)
