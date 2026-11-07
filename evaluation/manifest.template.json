@@ -5,9 +5,11 @@
     512,
     1024,
     2048,
-    4096
+    4096,
+    8192
   ],
   "output_tokens": 128,
+  "fixed_context": null,
   "caps_mib": [
     1536,
     2048,

@@ -5,10 +5,14 @@ Follows [Keep a Changelog](https://keepachangelog.com/). Entries are taken from 
 ## [Unreleased]
 
 ### Added
+- `evaluate_quality.py ingest`: manifest-bound scoring of one policy/cap run. It verifies the frozen bundle, arm treatment, token counts, prompt hashes and backend arguments. The manifest gains `fixed_context`.
+- `scripts/run_quality_arm.py`: runs one policy arm at one cap. Each request runs in a systemd memory scope, and the driver records cgroup peak and OOM kills and writes `run.json` for `ingest`.
+- `scripts/prepare_quality_manifest.py`: fills manifests (hashes, tokenizer identity, rendered prompts, pinned token counts) and picks the tuned context per cap from development summaries.
 - Logo mark, generated figures (`scripts/make_figures.py`), computed README badges (`scripts/update_badges.py`) and a drift test.
 - `CONTRIBUTING.md`, `.editorconfig`, issue and pull request templates.
 
 ### Changed
+- Quality study contexts now include 8192, and fixed arms default to it. At 4096, held-out prompts (up to 5660 tokens) left only 7/10 cases per family eligible, below the 9/10 gate.
 - README rebuilt around measured evidence. Loose root files moved: `ZIG_VERSION_REQUIREMENT.md` to `docs/`, `Resources/` to `docs/archive/`.
 
 ## 2026-11-06

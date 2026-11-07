@@ -63,7 +63,7 @@ not filesystem-enforced immutability. Keep model files and raw runtime artifacts
 separately; manifest hashes identify them. This command does not run inference.
 
 Proposed experiment: existing CPU models, caps 1536/2048/3072 MiB, contexts
-512/1024/2048/4096, 128 output tokens. A development-only sweep measures eligible
+512/1024/2048/4096/8192, 128 output tokens. A development-only sweep measures eligible
 model/context pairs before choosing the tuned baseline. Exact repetitions,
 resource availability and cache procedure remain to be set before authorization.
 New experiments, model downloads and VM operations require explicit approval.
@@ -84,13 +84,147 @@ that deadline. The controller records overruns; this is not a real-time guarante
 or kernel isolation. RSS is not whole-workload cgroup charge; use a Linux wrapper
 for charge/OOM counters and preserve cold-process versus page-cache conditions.
 
-### Current scoring boundary
+### Scoring boundary
 
-`observed_quality_floor_met` describes response labels only. `quality_floor_passed`
-remains false and `provisional` remains true: the offline scorer does not yet bind
-records to a verified executed manifest, selected model/context or tokenizer
-counts. Do not combine treatments or cite this output as a validated policy
-comparison. Manifest-bound run ingestion and Linux cgroup capture are required
-before the experiment's research acceptance gate can pass. Unknown OOM/deadline
-measurements yield null aggregate counts. Diagnosis answer positions are balanced
-within each split.
+`score` is label-only: `quality_floor_passed` is always false and `provisional`
+always true. Use `ingest` for results that can be cited.
+
+## Manifest-bound ingestion
+
+`ingest` scores one policy at one cap against a frozen bundle. Run the scorer
+copy inside the bundle; ingestion refuses if the running scorer differs.
+
+```sh
+python3 state/quality/frozen-study/evaluate_quality.py ingest \
+  --bundle state/quality/frozen-study --run run.json --records records.jsonl --out summary.json
+```
+
+`run.json` is written by the execution driver after the run:
+`schema_version` (1), `policy`, `cap_mib`, `split`, `repetitions`,
+`bundle_checksums_sha256` (SHA-256 of the bundle's `checksums.json`) and
+`records_sha256`. Each record adds `model_id`, `context`, `prompt_tokens`,
+`rendered_prompt_sha256` and `backend_arguments` to the fields above.
+
+Ingestion rejects the whole run when any of these fail:
+
+- bundle files match `checksums.json`, and the manifest is experiment-ready;
+- the sidecar names this bundle, the records hash, the manifest split and
+  repetitions, a manifest policy and cap;
+- the arm's treatment holds. `models[0]` is the large model and `models[1]` the
+  small one. `fixed_large`/`fixed_small` use their model at `fixed_context`;
+  `tuned_large` uses the large model at `tuned_context_by_cap[cap]`;
+  `adaptive_input_gate` may use either model and any study context, and is the
+  only arm that may report `scheduler_refusal` (with null model and context);
+- the prompt token count, rendered-prompt hash and backend arguments equal the
+  manifest's entry for that case and model;
+- `context_ineligible` appears exactly when rendered tokens + output tokens
+  exceed the context.
+
+A bound summary reports `selections` (model@context counts). It stays
+`provisional` when rows are missing or any record lacks wall time, RSS, cgroup
+charge, OOM count or deadline flag. `quality_floor_passed` requires a bound,
+complete, fully measured held-out run that meets the observed floor.
+
+Token counts are still supplied by the pinned tokenizer and bound, not
+recomputed. A `context_ineligible` request is gated before launch, so its missing
+measurements do not make the run provisional. Diagnosis answer positions are
+balanced within each split.
+
+## Preparing manifests
+
+`scripts/prepare_quality_manifest.py prepare` fills a manifest from the
+template, without inference:
+
+- model, calibration and case hashes;
+- GGUF tokenizer identity and chat-template hash;
+- the source commit, read from `.git`;
+- `backend_arguments` for the target machine's `llama-completion`;
+- rendered prompts, with token counts from the pinned `llama-tokenize`, which
+  loads only the vocabulary.
+
+Rendering follows llama.cpp's built-in ChatML (jinja is off by default, and
+there is no system prompt). The tool refuses a model whose GGUF template is not
+ChatML. Hardware, authorization and repetitions are flags; while any is unset,
+`freeze` refuses.
+
+```sh
+python3 scripts/prepare_quality_manifest.py prepare --split development --tuned-context 1024 \
+  --model smollm2-1.7b-q4=models/SmolLM2-1.7B-Instruct-Q4_K_M.gguf \
+  --model smollm2-360m-q4=models/SmolLM2-360M-Instruct-Q4_K_M.gguf \
+  --calibration state/calibration.tsv --tokenizer "$(command -v llama-tokenize)" \
+  --llama-completion /home/ubuntu/llama-b11669/llama-completion \
+  --hardware "..." --authorization "..." --repetitions 3 \
+  --out state/quality/prepared/development-tuned-1024.json
+```
+
+The development sweep uses one manifest per candidate context: `--tuned-context`
+applies that context at every cap. Run `tuned_large` at each cap from each
+frozen sweep bundle, then pick per cap:
+
+```sh
+python3 scripts/prepare_quality_manifest.py choose-tuned summaries/*.json --out tuned.json
+```
+
+`choose-tuned` takes bound, non-provisional development summaries. Its
+selection file becomes `--tuned-selection` for the held-out manifest, and its
+SHA-256 becomes `development_results_sha256`. The rendered-prompt assumption
+should be checked once on the target, for example by comparing
+`llama-completion --verbose-prompt` token counts for one case per model.
+
+**Context coverage (2026-11-07).** With the pinned b11669 tokenizer, prompts range
+from 116 to 5660 tokens, and counts are identical for both models. Including the
+128 reserved output tokens, the number of cases that fit is:
+
+| Context | Development (per family) | Held-out (per family) |
+|---:|---:|---:|
+| 512 | 3/10 | 2/10 |
+| 1024 | 6/10 | 4/10 |
+| 2048 | 6/10 | 4/10 |
+| 4096 | 8/10 | 7/10 |
+| 8192 | 10/10 | 10/10 |
+
+With 512–4096 only, no arm could reach the 9/10 held-out gate, so 8192
+(SmolLM2's trained context) is now a study context. Fixed arms default to
+`fixed_context` 8192, the only context every case fits. Fixed arms therefore
+fail on memory, not on input length. The tuned arm still picks its context per
+cap from development data, and the adaptive arm starts at 8192 and halves.
+
+## Running an arm
+
+`scripts/run_quality_arm.py` runs one policy at one cap and writes
+`records.jsonl` and `run.json` for `ingest`. **It launches real inference**, so
+use it only for an authorized experiment.
+
+```sh
+python3 scripts/run_quality_arm.py --bundle state/quality/frozen-study \
+  --policy adaptive_input_gate --cap-mib 1536 \
+  --model smollm2-1.7b-q4=models/SmolLM2-1.7B-Instruct-Q4_K_M.gguf \
+  --model smollm2-360m-q4=models/SmolLM2-360M-Instruct-Q4_K_M.gguf \
+  --calibration state/calibration.tsv --nanoclaw bin/nanoclaw-next \
+  --out state/quality/runs/adaptive-1536 --drop-caches
+```
+
+Before any launch, the driver checks that model and calibration files match the
+manifest hashes. Each request then runs `nanoclaw-next bench --runs 1
+--freeze-calibration` in a fresh directory. The directory holds a generated
+config (the manifest's `backend_arguments` as `llm_cmd`, plus only the arm's
+models) and keeps the raw argv, stdout/stderr and request sidecar.
+
+- **Fixed and tuned arms** configure one model at the frozen context and pass
+  `--available-mb` large enough to disable adaptation. The kernel cap is the
+  only memory limit, and an OOM kill ends as `backend_failed`.
+- **The adaptive arm** configures both models with `--ctx 8192`. `--min-ctx` is
+  the smallest study context that fits every model's rendered prompt plus the
+  output tokens. That is the input gate; there is no truncation.
+- **Inputs that cannot fit** are recorded as `context_ineligible` and never launched.
+
+`--launcher systemd` (the default) needs Linux with a systemd user manager. It
+wraps each request in a scope with `MemoryMax=<cap>M`, `MemorySwapMax=0` and
+`OOMPolicy=continue`, and records `memory.peak` and the `oom_kill` delta.
+`--drop-caches` runs `sudo -n` page-cache clearing before each request; it is
+meant for the VM only. `--launcher none` runs uncapped and leaves cgroup fields
+null, so its results stay provisional. Use it only for development smoke tests,
+with `--limit N`.
+
+Run each policy/cap pair into its own output directory, in the manifest's
+declared ordering. Then ingest each one with the bundle's frozen scorer.
