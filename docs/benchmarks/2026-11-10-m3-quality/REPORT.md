@@ -8,8 +8,6 @@ The [preflight log](preflight.txt) records model and binary hashes, a real 1536 
 
 The pilot uses one greedy repetition per case (`--temp 0 -s 1`), a 128-token output budget, a shared 120-second request deadline, no prompt truncation and fresh processes with the VM page cache cleared before each measured request. The development sweep uses 512/1024/2048/4096/8192 contexts at 1536/2048/3072 MiB. It tunes a fixed large-model context before the four-policy comparison on the 30 held-out cases. The per-family quality floor is 9/10 with zero forbidden decisions. See the [evaluation protocol](../../../evaluation/README.md) and [execution script](run-m3.sh).
 
-The preflight establishes measurement prerequisites. The smoke and study results will be recorded in separate commits as they are collected.
-
 ## Live cgroup smoke test
 
 The first attempt reached systemd but exited before inference because the runner resolved a relative scope-script path from the request's working directory. Commit `7846281` makes the scope and measurement paths absolute. The rerun used the unchanged Zig binary and the updated Python driver. The archive retains both attempts, exact commands, counters, raw responses and the frozen smoke bundle.
@@ -25,8 +23,15 @@ All four processes completed under the 1536 MiB cap with zero OOM kills and zero
 
 ## Development checkpoint at 1.5 and 2 GiB
 
-Each cap has five development arms with 30 cases per arm. At 1536 MiB there were 45 backend completions and 54 OOM kills. At 2048 MiB there were 69 backend completions and 30 OOM kills. At each cap, 51 inputs were ineligible for their assigned context. No development answer scored correct at either cap. At 4096 context alone, raising the cap from 1536 to 2048 MiB changed the eligible requests from 24 OOM kills to 24 completions. These completions did not improve the correctness score.
+Each cap has five development arms with 30 cases per arm. At each cap, 51 inputs were ineligible for their assigned context. No development answer scored correct. Request latency includes all attempts on the 99 launched requests per cap, including failures. Both caps recorded zero deadline misses.
+
+| Cap | Backend completions | Invalid outputs | Unnecessary refusals | Correct refusals | OOM kills | Request p50 / p95 (s) | Max child RSS / cgroup (MiB) |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1536 MiB | 45 | 42 | 3 | 0 | 54 | 2.120 / 9.812 | 1533.88 / 1536.00 |
+| 2048 MiB | 69 | 65 | 4 | 0 | 30 | 3.920 / 52.530 | 2044.45 / 2048.00 |
+
+At 4096 context, the eligible requests went from 24 OOM kills at 1536 MiB to 24 completions at 2048 MiB, with zero correct answers in both arms. Failed-request p50/p95 at the lower cap were 1.894/2.069 s. Completed-request p50/p95 at the higher cap were 13.871/58.157 s.
 
 ### Raw checkpoint
 
-The checkpoint contains 14/15 bound development arms. The in-progress arm at 3072 MiB at 8192 context has 22/30 records. The archive includes all recorded request rows at capture, completed request logs, frozen bundles, hashes and the earlier interruption. [Raw checkpoint archive](development-checkpoint-evidence.tar.gz).
+The checkpoint contains 14/15 bound development arms. The 3072 MiB arm at 8192 context has 22/30 records. Held-out results are pending. The archive includes all recorded request rows at capture, completed request logs, frozen bundles, hashes and the earlier interruption. [Raw checkpoint archive](development-checkpoint-evidence.tar.gz).
