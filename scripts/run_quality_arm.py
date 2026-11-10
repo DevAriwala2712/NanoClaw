@@ -70,6 +70,7 @@ def cgroup_measurements(run_dir):
 
 
 def scope_argv(cap_mib, run_dir, command):
+    run_dir = run_dir.resolve()
     return ['systemd-run', '--user', '--scope', '--quiet', '-p', f'MemoryMax={cap_mib}M',
             '-p', 'MemorySwapMax=0', '-p', 'OOMPolicy=continue',
             'bash', str(run_dir / 'scope.sh'), str(run_dir), *command]

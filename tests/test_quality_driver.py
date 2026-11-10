@@ -144,6 +144,22 @@ class QualityDriver(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.run_arm(out='sd', extra=['--launcher', 'systemd'])
 
+    def test_scope_launcher_works_from_request_directory_with_relative_output(self):
+        cg = self.dir / 'cgroup'
+        cg.mkdir()
+        (cg / 'memory.max').write_text('1610612736\n')
+        (cg / 'memory.events').write_text('oom_kill 0\n')
+        (cg / 'memory.peak').write_text('1234567\n')
+        run = self.dir / 'run'
+        run.mkdir()
+        (run / 'scope.sh').write_text(driver.SCOPE_SH)
+        relative_run = Path(os.path.relpath(run))
+        argv = driver.scope_argv(1536, relative_run, ['true'])
+        wrapper = argv[argv.index('bash'):]
+        subprocess.run(wrapper, cwd=run, check=True,
+                       env=dict(os.environ, NANOCLAW_CGROUP_DIR=str(cg)))
+        self.assertEqual(driver.cgroup_measurements(run), (1234567, 0))
+
     def test_scope_script_records_peak_and_oom_delta(self):
         cg = self.dir / 'cgroup'; cg.mkdir()
         (cg / 'memory.max').write_text('1610612736\n')

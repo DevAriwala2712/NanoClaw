@@ -1,0 +1,47 @@
+Source commit: d69a60f8d5109c6ca31c6e637a6928f0b0111e92
+Platform:
+Linux 6.8.0-147-generic aarch64 GNU/Linux
+PRETTY_NAME="Ubuntu 24.04.5 LTS"
+4
+               total        used        free      shared  buff/cache   available
+Mem:            3901         276        3654           1          88        3624
+Swap:              0           0           0
+version: 0.7.0-dev (build 11669, commit 620d2225c)
+built with GNU 14.2.0 for Linux aarch64
+version: 0.7.0-dev (build 11669, commit 620d2225c)
+built with GNU 14.2.0 for Linux aarch64
+Cgroup MemoryMax, MemorySwapMax, peak, and events:
+1610612736
+0
+851968
+low 0
+high 0
+max 0
+oom 0
+oom_kill 0
+oom_group_kill 0
+77665ea4815999596525c636fbeb56ba8b080b46ae85efef4f0d986a139834d7  /home/ubuntu/NanoClaw/models/SmolLM2-1.7B-Instruct-Q4_K_M.gguf
+2fa3f013dcdd7b99f9b237717fa0b12d75bbb89984cc1274be1471a465bac9c2  /home/ubuntu/NanoClaw/models/SmolLM2-360M-Instruct-Q4_K_M.gguf
+b1817fad7e487d5a637d3bf30cbb6704ec199039badcab48ac8550a443c2b973  calibration.tsv
+e7d50fd11ccc28b19d9d9868204455f10a723a78c75e93f44bb158e0dd553c93  /home/ubuntu/llama-b11669/llama-completion
+c3c7032f269af64fc72fb3ddb067f1cc35606a4f82ae8f31e97edd201d74057d  /home/ubuntu/llama-b11669/llama-tokenize
+b319c96bfd668ea1825600415275beaffcf14e76edb303bce521a818b0b00aa5  /home/ubuntu/llama-b11669/llama-server
+a318f85e79b6905ccad821fafb9b98f2554166e0851e97741549db868b19cc70  nanoclaw-next
+3141a06ccfe4513bdc25afb9be1fe0e6bdab7e05a7a6e7de8b7b92f49eb30b27  zig-tests
+Prompt token counts observed in llama-completion with --verbose-prompt:
+token-preflight/1.7B-diagnosis-04.stderr:0.02.550.422 I llama_completion: number of tokens in prompt = 5650
+token-preflight/1.7B-uncertainty-01.stderr:0.02.654.665 I llama_completion: number of tokens in prompt = 116
+token-preflight/360M-diagnosis-04.stderr:0.00.202.310 I llama_completion: number of tokens in prompt = 5650
+token-preflight/360M-uncertainty-01.stderr:0.00.312.296 I llama_completion: number of tokens in prompt = 116
+Tests:
+----------------------------------------------------------------------
+Ran 22 tests in 1.979s
+
+OK
+31/32 app.test.command parsing strips fences and stops at shell operators...OK
+32/32 app.test.command parsing picks the allowlisted line from a commented script...OK
+All 32 tests passed.
+[PASS] tool alias normalization
+[PASS] rollback journal flush
+
+=== Selftest: 10/10 passed ===
