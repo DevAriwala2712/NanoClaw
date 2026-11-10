@@ -26,3 +26,7 @@ All four processes completed under the 1536 MiB cap with zero OOM kills and zero
 ## Development checkpoint at 1.5 and 2 GiB
 
 Each cap has five development arms with 30 cases per arm. At 1536 MiB there were 45 backend completions and 54 OOM kills. At 2048 MiB there were 69 backend completions and 30 OOM kills. At each cap, 51 inputs were ineligible for their assigned context. No development answer scored correct at either cap. At 4096 context alone, raising the cap from 1536 to 2048 MiB changed the eligible requests from 24 OOM kills to 24 completions. These completions did not improve the correctness score.
+
+### Raw checkpoint
+
+The checkpoint contains 14/15 bound development arms. The in-progress arm at 3072 MiB at 8192 context has 22/30 records. The archive includes all recorded request rows at capture, completed request logs, frozen bundles, hashes and the earlier interruption. [Raw checkpoint archive](development-checkpoint-evidence.tar.gz).
