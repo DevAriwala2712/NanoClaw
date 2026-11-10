@@ -22,3 +22,7 @@ The first attempt reached systemd but exited before inference because the runner
 | Adaptive | diagnosis-04 (5650) | 360M @ 8192 | 37.787 s | 744.8 MiB | 786.5 MiB | Invalid output |
 
 All four processes completed under the 1536 MiB cap with zero OOM kills and zero deadline misses. Both arms ingested successfully and remain provisional because the smoke covers two development cases. [Raw smoke evidence](smoke-evidence.tar.gz).
+
+## Development checkpoint at 1.5 and 2 GiB
+
+Each cap has five development arms with 30 cases per arm. At 1536 MiB there were 45 backend completions and 54 OOM kills. At 2048 MiB there were 69 backend completions and 30 OOM kills. At each cap, 51 inputs were ineligible for their assigned context. No development answer scored correct at either cap. At 4096 context alone, raising the cap from 1536 to 2048 MiB changed the eligible requests from 24 OOM kills to 24 completions. These completions did not improve the correctness score.
