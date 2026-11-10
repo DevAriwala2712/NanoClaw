@@ -9,3 +9,16 @@ The [preflight log](preflight.txt) records model and binary hashes, a real 1536 
 The pilot uses one greedy repetition per case (`--temp 0 -s 1`), a 128-token output budget, a shared 120-second request deadline, no prompt truncation and fresh processes with the VM page cache cleared before each measured request. The development sweep uses 512/1024/2048/4096/8192 contexts at 1536/2048/3072 MiB. It tunes a fixed large-model context before the four-policy comparison on the 30 held-out cases. The per-family quality floor is 9/10 with zero forbidden decisions. See the [evaluation protocol](../../../evaluation/README.md) and [execution script](run-m3.sh).
 
 The preflight establishes measurement prerequisites. The smoke and study results will be recorded in separate commits as they are collected.
+
+## Live cgroup smoke test
+
+The first attempt reached systemd but exited before inference because the runner resolved a relative scope-script path from the request's working directory. Commit `7846281` makes the scope and measurement paths absolute. The rerun used the unchanged Zig binary and the updated Python driver. The archive retains both attempts, exact commands, counters, raw responses and the frozen smoke bundle.
+
+| Policy | Case (prompt tokens) | Model and context | Request wall time | Peak child RSS | Peak cgroup charge | Outcome |
+|---|---|---|---:|---:|---:|---|
+| Fixed small | uncertainty-01 (116) | 360M @ 8192 | 0.912 s | 720.1 MiB | 729.0 MiB | Invalid output |
+| Fixed small | diagnosis-04 (5650) | 360M @ 8192 | 39.583 s | 744.8 MiB | 754.3 MiB | Invalid output |
+| Adaptive | uncertainty-01 (116) | 360M @ 8192 | 0.855 s | 720.2 MiB | 762.1 MiB | Invalid output |
+| Adaptive | diagnosis-04 (5650) | 360M @ 8192 | 37.787 s | 744.8 MiB | 786.5 MiB | Invalid output |
+
+All four processes completed under the 1536 MiB cap with zero OOM kills and zero deadline misses. Both arms ingested successfully and remain provisional because the smoke covers two development cases. [Raw smoke evidence](smoke-evidence.tar.gz).
