@@ -35,3 +35,31 @@ At 4096 context, the eligible requests went from 24 OOM kills at 1536 MiB to 24 
 ### Raw checkpoint
 
 The checkpoint contains 14/15 bound development arms. The 3072 MiB arm at 8192 context has 22/30 records. Held-out results are pending. The archive includes all recorded request rows at capture, completed request logs, frozen bundles, hashes and the earlier interruption. [Raw checkpoint archive](development-checkpoint-evidence.tar.gz).
+
+## Development sweep
+
+Fifteen full development arms were scored and bound to the frozen manifests.
+The prespecified rule selected 4096 at 1536 MiB, 8192 at 2048 MiB, 512 at 3072 MiB.
+At 1536 MiB, 2048 MiB, the selection rule picked a context with zero backend completions. When no candidate scores a correct supported task, an arm that produces no answer can win the invalid-output tiebreak. The held-out comparison retains the frozen rule and reports this limitation.
+The denominator includes all 30 cases per arm. Ineligible cases did not launch.
+A VM power-off interrupted the first 3072 MiB / 1024-context arm. Its 21 records and shutdown evidence are archived separately. The arm was rerun from the beginning with the original bundle and its rerun is the only attempt included in the table.
+
+| Cap | Context | Correct supported | Correct refusals | Invalid | Ineligible | Backend failures | OOM kills |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1536 MiB | 512 | 0/25 | 0/5 | 8 | 21 | 0 | 0 |
+| 1536 MiB | 1024 | 0/25 | 0/5 | 17 | 12 | 0 | 0 |
+| 1536 MiB | 2048 | 0/25 | 0/5 | 17 | 12 | 0 | 0 |
+| 1536 MiB | 4096 | 0/25 | 0/5 | 0 | 6 | 24 | 24 |
+| 1536 MiB | 8192 | 0/25 | 0/5 | 0 | 0 | 30 | 30 |
+| 2048 MiB | 512 | 0/25 | 0/5 | 8 | 21 | 0 | 0 |
+| 2048 MiB | 1024 | 0/25 | 0/5 | 17 | 12 | 0 | 0 |
+| 2048 MiB | 2048 | 0/25 | 0/5 | 17 | 12 | 0 | 0 |
+| 2048 MiB | 4096 | 0/25 | 0/5 | 23 | 6 | 0 | 0 |
+| 2048 MiB | 8192 | 0/25 | 0/5 | 0 | 0 | 30 | 30 |
+| 3072 MiB | 512 | 0/25 | 0/5 | 8 | 21 | 0 | 0 |
+| 3072 MiB | 1024 | 0/25 | 0/5 | 17 | 12 | 0 | 0 |
+| 3072 MiB | 2048 | 0/25 | 0/5 | 17 | 12 | 0 | 0 |
+| 3072 MiB | 4096 | 0/25 | 0/5 | 23 | 6 | 0 | 0 |
+| 3072 MiB | 8192 | 0/25 | 0/5 | 29 | 0 | 0 | 0 |
+
+[Development metrics](development.csv) · [Tuned context selection](tuned.json) · [Raw development evidence](development-evidence.tar.gz).

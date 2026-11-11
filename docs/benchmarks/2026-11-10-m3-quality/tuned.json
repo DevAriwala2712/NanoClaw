@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "rule": "most correct supported tasks, then fewest invalid or forbidden outputs, then lowest median completion latency, then smallest context",
+  "allow_provisional": false,
+  "tuned_context_by_cap": {
+    "1536": 4096,
+    "2048": 8192,
+    "3072": 512
+  },
+  "candidates": {
+    "1536": [
+      {
+        "context": 512,
+        "summary": "runs/development/1536-512/summary.json",
+        "summary_sha256": "e9f4c14941a55156b2121d64d1b889ad55c9fa6da162c5b247bb5c8c0aee0413",
+        "correct_supported_tasks": 0,
+        "invalid_or_forbidden": 8,
+        "median_completion_ms": 3434
+      },
+      {
+        "context": 1024,
+        "summary": "runs/development/1536-1024/summary.json",
+        "summary_sha256": "7472927423599be21433ae98ef0730013b726289a17316a6783d63e535b2b9a7",
+        "correct_supported_tasks": 0,
+        "invalid_or_forbidden": 17,
+        "median_completion_ms": 4415
+      },
+      {
+        "context": 2048,
+        "summary": "runs/development/1536-2048/summary.json",
+        "summary_sha256": "0494581c3ba0759bbda0c359c2d209035be61b2960161a505b8a624877b397d2",
+        "correct_supported_tasks": 0,
+        "invalid_or_forbidden": 17,
+        "median_completion_ms": 5963
+      },
+      {
+        "context": 4096,
+        "summary": "runs/development/1536-4096/summary.json",
+        "summary_sha256": "70205b54091aeb0cabe360dc965e433ebe09ea96f01ea28c6e376f64a4842c76",
+        "correct_supported_tasks": 0,
+        "invalid_or_forbidden": 0,
+        "median_completion_ms": null
+      },
+      {
+        "context": 8192,
+        "summary": "runs/development/1536-8192/summary.json",
+        "summary_sha256": "179711c70d1ee29252536d400cf86f4de262994d94f7b97bc9563d7ba7880c39",
+        "correct_supported_tasks": 0,
+        "invalid_or_forbidden": 0,
+        "median_completion_ms": null
+      }
+    ],
+    "2048": [
+      {
+        "context": 512,
+        "summary": "runs/development/2048-512/summary.json",
+        "summary_sha256": "f5e70023d110256b3b145f667a00d4cf02fd84fc97a3f78caac19906f0802023",
+        "correct_supported_tasks": 0,
+        "invalid_or_forbidden": 8,
+        "median_completion_ms": 3580
+      },
+      {
+        "context": 1024,
+        "summary": "runs/development/2048-1024/summary.json",
+        "summary_sha256": "ebb543454d45ec67fb19f83daefde858cf7fd55eaf725e189eedfce2f27e0f70",
+        "correct_supported_tasks": 0,
+        "invalid_or_forbidden": 17,
+        "median_completion_ms": 3874
+      },
+      {
+        "context": 2048,
+        "summary": "runs/development/2048-2048/summary.json",
+        "summary_sha256": "3cd00614d361449c4f0714d9f175cdbc9cd21f57bb0061d9e98b465ba6f6b194",
+        "correct_supported_tasks": 0,
+        "invalid_or_forbidden": 17,
+        "median_completion_ms": 5273
+      },
+      {
+        "context": 4096,
+        "summary": "runs/development/2048-4096/summary.json",
+        "summary_sha256": "1b5899c3884537efd7a1b34832442292f131d79787d4a4a4351dcad7cb919c98",
+        "correct_supported_tasks": 0,
+        "invalid_or_forbidden": 23,
+        "median_completion_ms": 13871
+      },
+      {
+        "context": 8192,
+        "summary": "runs/development/2048-8192/summary.json",
+        "summary_sha256": "e953f7ff16ab9e6b47edd0deab7cbdedc973febe751465dd65ec39e16393d6c1",
+        "correct_supported_tasks": 0,
+        "invalid_or_forbidden": 0,
+        "median_completion_ms": null
+      }
+    ],
+    "3072": [
+      {
+        "context": 512,
+        "summary": "runs/development/3072-512/summary.json",
+        "summary_sha256": "b9857d1fc71d23b957b8603495b4c53a4c188add929fa42f6f3bb2cb61263ae2",
+        "correct_supported_tasks": 0,
+        "invalid_or_forbidden": 8,
+        "median_completion_ms": 5287
+      },
+      {
+        "context": 1024,
+        "summary": "runs/development/3072-1024/summary.json",
+        "summary_sha256": "6b3211004115683a1b63f5979e069669986e786653d42fa5a8d87c25624a7184",
+        "correct_supported_tasks": 0,
+        "invalid_or_forbidden": 17,
+        "median_completion_ms": 5358
+      },
+      {
+        "context": 2048,
+        "summary": "runs/development/3072-2048/summary.json",
+        "summary_sha256": "b78485603825d426334902a994a1a9250b96fd133941a9e36d98f628e06dfbfb",
+        "correct_supported_tasks": 0,
+        "invalid_or_forbidden": 17,
+        "median_completion_ms": 3850
+      },
+      {
+        "context": 4096,
+        "summary": "runs/development/3072-4096/summary.json",
+        "summary_sha256": "13c4b1fd429ae720b09529b1b14a016b27896da4526e85f83a7c57d85e8d62e7",
+        "correct_supported_tasks": 0,
+        "invalid_or_forbidden": 23,
+        "median_completion_ms": 8541
+      },
+      {
+        "context": 8192,
+        "summary": "runs/development/3072-8192/summary.json",
+        "summary_sha256": "6f5d3a0c55ee811e06ae919793dd780b5a99909945638531082f1b868c6b7f97",
+        "correct_supported_tasks": 0,
+        "invalid_or_forbidden": 29,
+        "median_completion_ms": 11154
+      }
+    ]
+  }
+}
