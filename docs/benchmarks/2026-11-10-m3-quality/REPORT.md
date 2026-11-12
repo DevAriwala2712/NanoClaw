@@ -34,7 +34,7 @@ At 4096 context, the eligible requests went from 24 OOM kills at 1536 MiB to 24 
 
 ### Raw checkpoint
 
-The checkpoint contains 14/15 bound development arms. The 3072 MiB arm at 8192 context has 22/30 records. Held-out results are pending. The archive includes all recorded request rows at capture, completed request logs, frozen bundles, hashes and the earlier interruption. [Raw checkpoint archive](development-checkpoint-evidence.tar.gz).
+The checkpoint contains 14/15 bound development arms. The 3072 MiB arm at 8192 context has 22/30 records. The held-out run was pending at capture. The archive includes all recorded request rows at capture, completed request logs, frozen bundles, hashes and the earlier interruption. [Raw checkpoint archive](development-checkpoint-evidence.tar.gz).
 
 ## Development sweep
 
@@ -63,3 +63,26 @@ A VM power-off interrupted the first 3072 MiB / 1024-context arm. Its 21 records
 | 3072 MiB | 8192 | 0/25 | 0/5 | 29 | 0 | 0 | 0 |
 
 [Development metrics](development.csv) · [Tuned context selection](tuned.json) · [Raw development evidence](development-evidence.tar.gz).
+
+## Held-out quality and resource results
+
+Each row covers the same 30 cases. E, D and U are extraction, diagnosis and uncertainty, each out of 10.
+Latency includes all attempts and spans scheduled requests, including failed ones.
+Cases gated before launch contribute to the quality denominator and have no runtime measurements.
+
+| Cap | Policy | E / D / U | Invalid | OOM kills | Deadline misses | Request p50 / p95 (ms) | Max RSS / cgroup (MiB) | Quality floor |
+|---:|---|---:|---:|---:|---:|---:|---:|---|
+| 1536 MiB | adaptive_input_gate | 0 / 0 / 0 | 28 | 0 | 0 | 11351 / 43142 | 744.9 / 787.7 | Fail |
+| 1536 MiB | fixed_large | 0 / 0 / 0 | 0 | 30 | 0 | 1878 / 2276 | 1533.9 / 1536.0 | Fail |
+| 1536 MiB | fixed_small | 0 / 0 / 0 | 28 | 0 | 0 | 11242 / 39703 | 745.1 / 753.8 | Fail |
+| 1536 MiB | tuned_large | 0 / 0 / 0 | 0 | 21 | 0 | 1788 / 1937 | 1534.1 / 1536.0 | Fail |
+| 2048 MiB | adaptive_input_gate | 0 / 0 / 0 | 28 | 0 | 0 | 14599 / 44230 | 745.1 / 787.7 | Fail |
+| 2048 MiB | fixed_large | 0 / 0 / 0 | 0 | 30 | 0 | 1782 / 2263 | 2045.0 / 2048.0 | Fail |
+| 2048 MiB | fixed_small | 0 / 0 / 0 | 28 | 0 | 0 | 13243 / 71407 | 745.1 / 753.6 | Fail |
+| 2048 MiB | tuned_large | 0 / 0 / 0 | 0 | 30 | 0 | 1785 / 2315 | 2045.1 / 2048.0 | Fail |
+| 3072 MiB | adaptive_input_gate | 0 / 0 / 0 | 30 | 0 | 0 | 14951 / 45945 | 2492.8 / 2540.5 | Fail |
+| 3072 MiB | fixed_large | 0 / 0 / 0 | 30 | 0 | 0 | 28055 / 85206 | 3066.9 / 3072.0 | Fail |
+| 3072 MiB | fixed_small | 0 / 0 / 0 | 28 | 0 | 0 | 14390 / 44649 | 744.9 / 753.8 | Fail |
+| 3072 MiB | tuned_large | 0 / 0 / 0 | 6 | 0 | 0 | 2913 / 3184 | 2158.1 / 2171.2 | Fail |
+
+[Held-out metrics](heldout.csv) include correct refusals, forbidden decisions, ineligibility, backend failures, model/context selections, and latency split by completion status. [Raw held-out evidence](heldout-evidence.tar.gz).

@@ -1,0 +1,13 @@
+cap_mib,arm,tasks,correct_supported,supported_tasks,correct_refusals,refusal_tasks,extraction_correct,diagnosis_correct,uncertainty_correct,invalid_outputs,forbidden_selections,backend_completions,context_ineligible,scheduler_refusals,backend_failures,oom_kills,deadline_misses,all_requests_p50_ms,all_requests_p95_ms,completed_p50_ms,completed_p95_ms,failed_p50_ms,failed_p95_ms,max_attempt_rss_mib,max_cgroup_mib,quality_floor_passed,selections
+1536,adaptive_input_gate,30,0,25,0,5,0,0,0,28,0,30,0,0,0,0,0,11351,43142,11351,43142,,,744.9,787.7,False,"{""smollm2-360m-q4@8192"":30}"
+1536,fixed_large,30,0,25,0,5,0,0,0,0,0,0,0,0,30,30,0,1878,2276,,,1878,2276,1533.9,1536.0,False,"{""smollm2-1.7b-q4@8192"":30}"
+1536,fixed_small,30,0,25,0,5,0,0,0,28,0,30,0,0,0,0,0,11242,39703,11242,39703,,,745.1,753.8,False,"{""smollm2-360m-q4@8192"":30}"
+1536,tuned_large,30,0,25,0,5,0,0,0,0,0,0,9,0,21,21,0,1788,1937,,,1788,1937,1534.1,1536.0,False,"{""smollm2-1.7b-q4@4096"":30}"
+2048,adaptive_input_gate,30,0,25,0,5,0,0,0,28,0,30,0,0,0,0,0,14599,44230,14599,44230,,,745.1,787.7,False,"{""smollm2-360m-q4@8192"":30}"
+2048,fixed_large,30,0,25,0,5,0,0,0,0,0,0,0,0,30,30,0,1782,2263,,,1782,2263,2045.0,2048.0,False,"{""smollm2-1.7b-q4@8192"":30}"
+2048,fixed_small,30,0,25,0,5,0,0,0,28,0,30,0,0,0,0,0,13243,71407,13243,71407,,,745.1,753.6,False,"{""smollm2-360m-q4@8192"":30}"
+2048,tuned_large,30,0,25,0,5,0,0,0,0,0,0,0,0,30,30,0,1785,2315,,,1785,2315,2045.1,2048.0,False,"{""smollm2-1.7b-q4@8192"":30}"
+3072,adaptive_input_gate,30,0,25,0,5,0,0,0,30,0,30,0,0,0,0,0,14951,45945,14951,45945,,,2492.8,2540.5,False,"{""smollm2-1.7b-q4@2048"":12,""smollm2-360m-q4@8192"":18}"
+3072,fixed_large,30,0,25,0,5,0,0,0,30,0,30,0,0,0,0,0,28055,85206,28055,85206,,,3066.9,3072.0,False,"{""smollm2-1.7b-q4@8192"":30}"
+3072,fixed_small,30,0,25,0,5,0,0,0,28,0,30,0,0,0,0,0,14390,44649,14390,44649,,,744.9,753.8,False,"{""smollm2-360m-q4@8192"":30}"
+3072,tuned_large,30,0,25,0,5,0,0,0,6,0,6,24,0,0,0,0,2913,3184,2913,3184,,,2158.1,2171.2,False,"{""smollm2-1.7b-q4@512"":30}"
