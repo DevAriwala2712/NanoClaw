@@ -86,3 +86,16 @@ Cases gated before launch contribute to the quality denominator and have no runt
 | 3072 MiB | tuned_large | 0 / 0 / 0 | 6 | 0 | 0 | 2913 / 3184 | 2158.1 / 2171.2 | Fail |
 
 [Held-out metrics](heldout.csv) include correct refusals, forbidden decisions, ineligibility, backend failures, model/context selections, and latency split by completion status. [Raw held-out evidence](heldout-evidence.tar.gz).
+
+## KV cache feasibility probe
+
+The same 1.7B Q4_K_M model ran at 8192 context under a 3072 MiB cap. Both arms enabled Flash Attention and used the same two development cases, threads and cold-cache procedure.
+
+| K/V cache | Case | Backend status | Scored outcome | Wall (ms) | RSS / cgroup (MiB) | OOM kills | Deadline missed |
+|---|---|---|---|---:|---:|---:|---|
+| f16 | uncertainty-01 | completed | invalid | 3860 | 3066.7 / 3072.0 | 0 | No |
+| f16 | diagnosis-04 | completed | invalid | 79570 | 3066.5 / 3072.0 | 0 | No |
+| q8_0 | uncertainty-01 | completed | invalid | 3350 | 2874.5 / 2889.2 | 0 | No |
+| q8_0 | diagnosis-04 | deadline_exhausted | deadline_exhausted | 120156 | 2930.1 / 2944.4 | 0 | Yes |
+
+[Probe commands](run-kv.sh) · [Raw KV probe evidence](kv-evidence.tar.gz).
