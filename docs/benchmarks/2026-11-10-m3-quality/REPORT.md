@@ -99,3 +99,17 @@ The same 1.7B Q4_K_M model ran at 8192 context under a 3072 MiB cap. Both arms e
 | q8_0 | diagnosis-04 | deadline_exhausted | deadline_exhausted | 120156 | 2930.1 / 2944.4 | 0 | Yes |
 
 [Probe commands](run-kv.sh) · [Raw KV probe evidence](kv-evidence.tar.gz).
+
+## Persistent server cold and warm probe
+
+Both cases used 360M Q4_K_M at 8192 context under 1536 MiB. A fresh one-slot llama-server b11669 served each cold/warm pair with prompt caching disabled. Cold server wall time includes server startup and HTTP. Warm wall time starts at the HTTP request.
+Cold CLI measurements are scope-inclusive wall times from the fixed-small smoke arm.
+
+| Case | Cold CLI (ms) | Cold server (ms) | Warm server (ms) | Server idle cgroup (MiB) | Server peak RSS / cgroup (MiB) | CLI / cold server / warm server score |
+|---|---:|---:|---:|---:|---:|---|
+| uncertainty-01 | 988 | 1190 | 447 | 731.4 | 724.3 / 731.9 | invalid / invalid / invalid |
+| diagnosis-04 | 39630 | 46859 | 47342 | 756.5 | 749.9 / 757.3 | invalid / invalid / invalid |
+
+The idle charge is the scope snapshot after its cold response. The high-water marks cover the entire server lifetime through the warm response. These two pairs are exploratory.
+
+[Probe commands](run-persistent.py) · [Raw server evidence](persistent-evidence.tar.gz).
